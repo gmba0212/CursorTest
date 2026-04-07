@@ -1,13 +1,39 @@
 package com.example.eaimessage.builder;
 
 import com.example.eaimessage.model.ATalkBodySendData;
+import com.example.eaimessage.model.ATalkHeaderSendData;
 import com.example.eaimessage.model.ChannelType;
 import com.example.eaimessage.model.MessageSendRequest;
 import com.example.eaimessage.model.MessageType;
+import java.nio.charset.StandardCharsets;
 import org.springframework.stereotype.Component;
 
 @Component
 public class MailMessageBuilder extends AbstractMessageBuilder {
+
+    @Override
+    protected String buildBodyString(MessageSendRequest request) {
+        ATalkBodySendData body = new ATalkBodySendData();
+        body.setTemplateCode(defaultString(request.getTemplateCode()));
+        body.setSenderKey(defaultString(request.getSenderKey()));
+        body.setRecipient(firstRecipient(request));
+        body.setSubject(defaultString(request.getSubject()));
+        body.setContent(defaultString(request.getContent()));
+
+        applyMessageType(body, request);
+        return body.toMessageString();
+    }
+
+    @Override
+    protected String buildHeaderString(MessageSendRequest request, String bodyString) {
+        ATalkHeaderSendData header = new ATalkHeaderSendData();
+        header.setTransactionId(newTransactionId());
+        header.setSenderSystemCode("EAI");
+        header.setChannelCode(ChannelType.MAIL.name());
+        header.setMessageTypeCode(request.getMessageType().name());
+        header.setBodyLength(bodyString.getBytes(StandardCharsets.UTF_8).length);
+        return header.toFixedLengthString();
+    }
 
     @Override
     protected void applyMessageType(ATalkBodySendData body, MessageSendRequest request) {

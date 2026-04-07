@@ -1,8 +1,10 @@
 package com.example.eaimessage.builder;
 
 import com.example.eaimessage.model.ATalkBodySendData;
+import com.example.eaimessage.model.ATalkHeaderSendData;
 import com.example.eaimessage.model.ChannelType;
 import com.example.eaimessage.model.MessageSendRequest;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import org.springframework.stereotype.Component;
@@ -13,7 +15,26 @@ public class ATalkMessageBuilder extends AbstractMessageBuilder {
     private static final String DEFAULT_TEMPLATE = "ATALK_INFO";
 
     @Override
-    protected void applyMessageType(ATalkBodySendData body, MessageSendRequest request) {
+    protected String buildBodyString(MessageSendRequest request) {
+        ATalkBodySendData body = new ATalkBodySendData();
+        body.setSenderKey(defaultString(request.getSenderKey()));
+        body.setRecipient(firstRecipient(request));
+        applyMessageType(body, request);
+        return body.toMessageString();
+    }
+
+    @Override
+    protected String buildHeaderString(MessageSendRequest request, String bodyString) {
+        ATalkHeaderSendData header = new ATalkHeaderSendData();
+        header.setTransactionId(newTransactionId());
+        header.setSenderSystemCode("EAI");
+        header.setChannelCode(request.getChannelType().name());
+        header.setMessageTypeCode(request.getMessageType().name());
+        header.setBodyLength(bodyString.getBytes(StandardCharsets.UTF_8).length);
+        return header.toFixedLengthString();
+    }
+
+    private void applyMessageType(ATalkBodySendData body, MessageSendRequest request) {
         switch (request.getMessageType()) {
             case ATALK_APPROVAL_REQUEST -> applyApprovalRequest(body, request);
             case ATALK_APPROVAL_COMPLETE -> applyApprovalComplete(body, request);

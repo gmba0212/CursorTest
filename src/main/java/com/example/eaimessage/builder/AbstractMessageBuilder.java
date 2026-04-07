@@ -1,7 +1,5 @@
 package com.example.eaimessage.builder;
 
-import com.example.eaimessage.model.ATalkBodySendData;
-import com.example.eaimessage.model.ATalkHeaderSendData;
 import com.example.eaimessage.model.ChannelType;
 import com.example.eaimessage.model.MessagePayload;
 import com.example.eaimessage.model.MessageSendRequest;
@@ -19,42 +17,19 @@ public abstract class AbstractMessageBuilder implements MessageBuilder {
 
     @Override
     public MessagePayload build(MessageSendRequest request) {
-        validate(request);
-
-        ATalkBodySendData body = new ATalkBodySendData();
-        applyCommonBody(body, request);
-        applyMessageType(body, request);
-
-        String bodyString = body.toMessageString();
-
-        ATalkHeaderSendData header = new ATalkHeaderSendData();
-        applyHeader(header, request, bodyString);
-
-        String payload = header.toFixedLengthString() + bodyString;
-        return new MessagePayload(payload);
+        validateRequest(request);
+        String bodyString = buildBodyString(request);
+        String headerString = buildHeaderString(request, bodyString);
+        return new MessagePayload(headerString + bodyString);
     }
 
-    protected void applyCommonBody(ATalkBodySendData body, MessageSendRequest request) {
-        body.setTemplateCode(defaultString(request.getTemplateCode()));
-        body.setSenderKey(defaultString(request.getSenderKey()));
-        body.setSubject(defaultString(request.getSubject()));
-        body.setContent(defaultString(request.getContent()));
-        body.setRecipient(firstRecipient(request));
-    }
+    protected abstract String buildBodyString(MessageSendRequest request);
 
-    protected void applyHeader(ATalkHeaderSendData header, MessageSendRequest request, String bodyString) {
-        header.setTransactionId(generateTransactionId());
-        header.setSenderSystemCode("EAI");
-        header.setChannelCode(request.getChannelType().name());
-        header.setMessageTypeCode(request.getMessageType().name());
-        header.setBodyLength(bodyString.getBytes(StandardCharsets.UTF_8).length);
-    }
-
-    protected abstract void applyMessageType(ATalkBodySendData body, MessageSendRequest request);
+    protected abstract String buildHeaderString(MessageSendRequest request, String bodyString);
 
     protected abstract ChannelType channelType();
 
-    private void validate(MessageSendRequest request) {
+    protected void validateRequest(MessageSendRequest request) {
         if (request == null) {
             throw new IllegalArgumentException("request must not be null");
         }
@@ -86,7 +61,11 @@ public abstract class AbstractMessageBuilder implements MessageBuilder {
         return value == null ? "" : String.valueOf(value);
     }
 
-    private String generateTransactionId() {
+    protected String newTransactionId() {
         return LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS"));
+    }
+
+    protected int utf8Length(String value) {
+        return defaultString(value).getBytes(StandardCharsets.UTF_8).length;
     }
 }
