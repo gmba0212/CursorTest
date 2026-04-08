@@ -4,6 +4,7 @@ import com.example.eaimessage.header.EaiHeaderFactory;
 import com.example.eaimessage.model.ChannelType;
 import com.example.eaimessage.model.MessageType;
 import com.example.eaimessage.model.ServiceData;
+import com.example.eaimessage.model.SmsBodyPayload;
 import com.example.eaimessage.model.TalkRequest;
 import com.example.eaimessage.service.ExternalMessageDataService;
 import org.springframework.stereotype.Component;
@@ -32,11 +33,14 @@ public class SmsMessageBuilder extends AbstractMessageBuilder {
             title = "[인증번호]";
             content = "인증번호는 [" + firstNonBlank(serviceData.getString("authCode"), "000000") + "] 입니다.";
         }
-        return fixed("SMS", 10)
-            + fixed(defaultString(request.getReceiverType()), 10)
-            + fixed(defaultString(request.getReceiverAddress()), 30)
-            + fixed(defaultString(request.getReceiverId()), 20)
-            + fixed(title, 80)
-            + fixed(content, 300);
+
+        SmsBodyPayload payload = new SmsBodyPayload(
+            defaultString(request.getReceiverType()),
+            defaultString(request.getReceiverAddress()),
+            defaultString(request.getReceiverId()),
+            title,
+            content
+        );
+        return payload.buildMessage();
     }
 }

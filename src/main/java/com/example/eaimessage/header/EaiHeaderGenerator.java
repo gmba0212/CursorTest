@@ -1,8 +1,11 @@
 package com.example.eaimessage.header;
 
+import org.springframework.stereotype.Component;
+
 /**
  * 기존 Header 생성 소스(고정길이 + String.format 패딩)를 재사용하는 역할.
  */
+@Component
 public class EaiHeaderGenerator {
     private static final int TEST_TP_DSCD_LEN = 1;
     private static final int SYS_CD_LEN = 10;
@@ -22,13 +25,20 @@ public class EaiHeaderGenerator {
         String messageTypeCode,
         int bodyLength
     ) {
-        return TEST_TP_DSCD
-            + String.format("%-" + SYS_CD_LEN + "s", SYS_CD)
-            + String.format("%-" + IF_ID_LEN + "s", IF_ID)
-            + String.format("%-" + TX_ID_LEN + "s", safe(transactionId))
-            + String.format("%-" + CHANNEL_LEN + "s", safe(channelCode))
-            + String.format("%-" + MESSAGE_TYPE_LEN + "s", safe(messageTypeCode))
-            + String.format("%0" + BODY_LENGTH_LEN + "d", Math.max(bodyLength, 0));
+        String txId = String.format("%-" + TX_ID_LEN + "s", safe(transactionId));
+        String channel = String.format("%-" + CHANNEL_LEN + "s", safe(channelCode));
+        String messageType = String.format("%-" + MESSAGE_TYPE_LEN + "s", safe(messageTypeCode));
+        String length = String.format("%0" + BODY_LENGTH_LEN + "d", Math.max(bodyLength, 0));
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(TEST_TP_DSCD);
+        sb.append(SYS_CD);
+        sb.append(IF_ID);
+        sb.append(txId);
+        sb.append(channel);
+        sb.append(messageType);
+        sb.append(length);
+        return sb.toString();
     }
 
     private String safe(String value) {

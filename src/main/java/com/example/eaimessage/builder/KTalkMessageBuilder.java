@@ -78,7 +78,7 @@ public class KTalkMessageBuilder extends AbstractMessageBuilder {
             }
             default -> throw new IllegalArgumentException("KTALK 미지원 messageType: " + request.getMessageType());
         }
-        return body.toMessageString();
+        return body.buildMessage();
     }
 
     private String valueOr(ServiceData serviceData, String key, String defaultValue) {
