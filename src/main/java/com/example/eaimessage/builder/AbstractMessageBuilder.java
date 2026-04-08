@@ -1,68 +1,97 @@
 package com.example.eaimessage.builder;
 
-import com.example.eaimessage.model.ChannelType;
+import com.example.eaimessage.header.EaiHeaderFactory;
+import com.example.eaimessage.header.FixedLengthFieldFormatter;
 import com.example.eaimessage.model.MessagePayload;
-import com.example.eaimessage.model.MessageSendRequest;
+import com.example.eaimessage.model.ServiceData;
+import com.example.eaimessage.model.TalkRequest;
+import com.example.eaimessage.service.ExternalMessageDataService;
 
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
 public abstract class AbstractMessageBuilder implements MessageBuilder {
 
-    @Override
-    public boolean supports(ChannelType channelType) {
-        return channelType == channelType();
+    protected final EaiHeaderFactory headerFactory;
+    private final ExternalMessageDataService externalMessageDataService;
+
+    protected AbstractMessageBuilder(
+        EaiHeaderFactory headerFactory,
+        ExternalMessageDataService externalMessageDataService
+    ) {
+        this.headerFactory = headerFactory;
+        this.externalMessageDataService = externalMessageDataService;
     }
 
     @Override
-    public MessagePayload build(MessageSendRequest request) {
-        validateRequest(request);
-        String bodyString = buildBodyString(request);
-        String headerString = buildHeaderString(request, bodyString);
-        return new MessagePayload(headerString + bodyString);
+    public MessagePayload build(TalkRequest request) {
+        if (request == null || request.getMessageType() == null || request.getChannelType() == null) {
+            throw new IllegalArgumentException("request/channelType/messageType must not be null");
+        }
+        if (!supports(request.getChannelType(), request.getMessageType())) {
+            throw new IllegalArgumentException("unsupported messageType/channelType");
+        }
+        ServiceData serviceData = externalMessageDataService.resolve(request);
+        String body = buildBodyString(request, serviceData);
+        String header = headerFactory.createHeader(
+            newTransactionId(),
+            request.getChannelType(),
+            request.getMessageType(),
+            utf8Length(body)
+        );
+        return new MessagePayload(header + body);
     }
 
-    protected abstract String buildBodyString(MessageSendRequest request);
+    protected abstract String buildBodyString(TalkRequest request, ServiceData serviceData);
 
-    protected abstract String buildHeaderString(MessageSendRequest request, String bodyString);
-
-    protected abstract ChannelType channelType();
-
-    protected void validateRequest(MessageSendRequest request) {
-        if (request == null) {
-            throw new IllegalArgumentException("request must not be null");
+    protected String param(TalkRequest request, String key, String defaultValue) {
+        if (request.getParams() == null) {
+            return defaultValue;
         }
-        if (request.getChannelType() != channelType()) {
-            throw new IllegalArgumentException("unsupported channel type for builder: " + request.getChannelType());
+        Object value = request.getParams().get(key);
+        if (value == null) {
+            return defaultValue;
         }
-        if (request.getMessageType() == null) {
-            throw new IllegalArgumentException("messageType must not be null");
-        }
+        String casted = String.valueOf(value);
+        return casted.isBlank() ? defaultValue : casted;
     }
 
     protected String defaultString(String value) {
         return value == null ? "" : value;
     }
 
-    protected String firstRecipient(MessageSendRequest request) {
-        if (request.getRecipients() == null || request.getRecipients().isEmpty()) {
-            return "";
-        }
-        String first = request.getRecipients().get(0);
-        return first == null ? "" : first;
+    protected String fixed(String value, int length) {
+        return FixedLengthFieldFormatter.rightPad(value, length);
     }
 
-    protected String fromData(MessageSendRequest request, String key) {
-        if (request.getData() == null) {
+    protected String firstNonBlank(String... values) {
+        if (values == null) {
             return "";
         }
-        Object value = request.getData().get(key);
-        return value == null ? "" : String.valueOf(value);
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+        return "";
     }
 
-    protected String newTransactionId() {
-        return LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS"));
+    protected String defaultIfBlank(String value, String defaultValue) {
+        return value == null || value.isBlank() ? defaultValue : value;
+    }
+
+    protected String concat(String... parts) {
+        StringBuilder sb = new StringBuilder();
+        if (parts != null) {
+            for (String part : parts) {
+                sb.append(defaultString(part));
+            }
+        }
+        return sb.toString();
+    }
+
+    private String newTransactionId() {
+        return java.time.LocalDateTime.now()
+            .format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS"));
     }
 
     protected int utf8Length(String value) {

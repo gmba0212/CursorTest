@@ -1,5 +1,7 @@
 package com.example.eaimessage.model;
 
+import com.example.eaimessage.header.FixedLengthFieldFormatter;
+
 public class ATalkBodySendData {
     private String templateCode = "";
     private String senderKey = "";
@@ -48,18 +50,10 @@ public class ATalkBodySendData {
     }
 
     public String toMessageString() {
-        return padRight(templateCode, 10)
-            + padRight(senderKey, 20)
-            + padRight(recipient, 15)
-            + padRight(subject, 80)
-            + padRight(content, 300);
-    }
-
-    private String padRight(String value, int length) {
-        String normalized = value == null ? "" : value;
-        if (normalized.length() >= length) {
-            return normalized.substring(0, length);
-        }
-        return normalized + " ".repeat(length - normalized.length());
+        return FixedLengthFieldFormatter.rightPad(templateCode, 10)
+            + FixedLengthFieldFormatter.rightPad(senderKey, 20)
+            + FixedLengthFieldFormatter.rightPad(recipient, 30)
+            + FixedLengthFieldFormatter.rightPad(subject, 80)
+            + FixedLengthFieldFormatter.rightPad(content, 300);
     }
 }
