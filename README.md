@@ -1,51 +1,56 @@
 # EAI Message Common Module
 
-Spring Boot 기반으로 알림톡/메일/SMS를 공통 전송 구조로 처리하는
-메시지 모듈 예제입니다.
+Spring Boot 기반 메시지 발송 공통 모듈입니다.
+메일(EMAIL), 문자(SMS), 알림톡(KTALK)을 공통 구조로 처리합니다.
 
-## 핵심 설계
+## 핵심 구조
 
-- Factory + Builder 패턴 적용
-- 채널별 Builder 1개 구조
-  - `ATalkMessageBuilder`
-  - `MailMessageBuilder`
-  - `SmsMessageBuilder`
-- 채널별 Builder 내부에서 `messageType` 분기 처리
-- 최종 전송 전문은 JSON이 아닌 문자열
-  - `header 문자열 + body 문자열`
+- 진입 서비스: `TalkService`
+- 요청 DTO: `TalkRequest` (최소 공통 필드 + `params`)
+- 선택 구조: `MessageBuilderFactory` (`channelType + messageType`)
+- 생성 구조: 채널별 Builder (`KTalkMessageBuilder`, `EmailMessageBuilder`, `SmsMessageBuilder`)
+- 전송 구조: `EaiHttpClient`
 
-## 패키지 구조
+## 처리 흐름
 
-- `model`
-- `builder`
-- `factory`
-- `client`
-- `service`
+1. 호출부에서 `TalkRequest` 생성
+2. `talkService.send(request)` 호출
+3. `MessageBuilderFactory`가 `(channelType, messageType)`로 Builder 선택
+4. Builder가
+   - `ExternalMessageDataService`로 중간 데이터 조회
+   - `EaiHeaderFactory`로 Header 생성
+   - 채널별 Body 생성
+   - `header + body` 결합
+5. `EaiHttpClient`가 외부 시스템으로 HTTP 전송
 
-## 전송 흐름
+## 전문/전송 원칙
 
-1. `MessageSendService`가 요청 수신
-2. `MessageBuilderFactory`가 채널별 Builder 선택
-3. Builder가 `ATalkHeaderSendData` / `ATalkBodySendData`로 문자열 전문 생성
-4. `EaiHttpClient`가 `text/plain; charset=UTF-8`로 HTTP POST 전송
-
-## 주요 요구사항 반영
-
-- `httpPost.setEntity(new StringEntity(payload, StandardCharsets.UTF_8));`
+- 전문은 문자열 기반
+  - `[EAI Header] + [채널별 Body]`
+- JSON 직렬화 전송 미사용
 - `Content-Type: text/plain; charset=UTF-8`
-- DTO/Map/JSON 직렬화 전송 없음
+- 전송 코드:
+
+```java
+httpPost.setEntity(new StringEntity(payload, StandardCharsets.UTF_8));
+```
+
+## 헤더 재사용
+
+기존 `String.format("%-Ns", value)` 기반 고정길이 패딩 방식을
+`EaiHeaderGenerator`에서 재사용하고, Builder에서는 `EaiHeaderFactory`만 호출합니다.
 
 ## 샘플 실행
 
-`SampleMessageRunner`는 애플리케이션 시작 시 샘플 요청을 생성해
-`MessageSendService`를 호출합니다.
+`SampleTalkRunner`가 샘플 요청을 생성해 `TalkService`를 호출합니다.
 
 기본 전송 URL:
 
 `http://localhost:8081/eai/send`
 
-환경설정으로 변경 가능:
+환경설정:
 
 ```properties
 eai.endpoint=http://your-eai-host/eai/send
+sample.run=true
 ```
