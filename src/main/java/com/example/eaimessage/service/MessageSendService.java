@@ -6,6 +6,7 @@ import com.example.eaimessage.model.HttpSendRequest;
 import com.example.eaimessage.model.TalkRequest;
 import com.example.eaimessage.registry.ChannelRendererRegistry;
 import com.example.eaimessage.registry.MessageContentBuilderRegistry;
+import com.example.eaimessage.registry.MessageDataResolverRegistry;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -15,7 +16,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class MessageSendService {
 
-    private final ExternalMessageDataService externalMessageDataService;
+    private final MessageDataResolverRegistry dataResolverRegistry;
     private final MessageContentBuilderRegistry contentRegistry;
     private final ChannelRendererRegistry channelRegistry;
     private final EaiHeaderFactory headerFactory;
@@ -23,14 +24,14 @@ public class MessageSendService {
     private final String eaiEndpoint;
 
     public MessageSendService(
-        ExternalMessageDataService externalMessageDataService,
+        MessageDataResolverRegistry dataResolverRegistry,
         MessageContentBuilderRegistry contentRegistry,
         ChannelRendererRegistry channelRegistry,
         EaiHeaderFactory headerFactory,
         EaiHttpClient eaiHttpClient,
         @Value("${eai.endpoint:http://localhost:8081/eai/send}") String eaiEndpoint
     ) {
-        this.externalMessageDataService = externalMessageDataService;
+        this.dataResolverRegistry = dataResolverRegistry;
         this.contentRegistry = contentRegistry;
         this.channelRegistry = channelRegistry;
         this.headerFactory = headerFactory;
@@ -42,7 +43,7 @@ public class MessageSendService {
         if (request == null || request.getChannelType() == null || request.getMessageType() == null) {
             throw new IllegalArgumentException("channelType/messageType must not be null");
         }
-        var serviceData = externalMessageDataService.resolve(request);
+        var serviceData = dataResolverRegistry.require(request.getMessageType()).resolve(request);
         var content = contentRegistry.require(request.getMessageType()).build(request, serviceData);
         String body = channelRegistry.require(request.getChannelType())
             .renderBody(request, serviceData, content);
