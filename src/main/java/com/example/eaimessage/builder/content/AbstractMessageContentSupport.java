@@ -1,21 +1,8 @@
 package com.example.eaimessage.builder.content;
 
 import com.example.eaimessage.model.ServiceData;
-import com.example.eaimessage.model.TalkRequest;
 
 abstract class AbstractMessageContentSupport {
-
-    protected String param(TalkRequest request, String key, String defaultValue) {
-        if (request.getParams() == null) {
-            return defaultValue;
-        }
-        Object value = request.getParams().get(key);
-        if (value == null) {
-            return defaultValue;
-        }
-        String s = String.valueOf(value);
-        return s.isBlank() ? defaultValue : s;
-    }
 
     protected String valueOr(ServiceData data, String key, String defaultValue) {
         String v = data.getString(key);

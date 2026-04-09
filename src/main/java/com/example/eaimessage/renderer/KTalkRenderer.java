@@ -1,5 +1,6 @@
 package com.example.eaimessage.renderer;
 
+import com.example.eaimessage.config.KTalkProperties;
 import com.example.eaimessage.model.ATalkBodySendData;
 import com.example.eaimessage.model.ChannelType;
 import com.example.eaimessage.model.MessageContent;
@@ -10,6 +11,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class KTalkRenderer extends AbstractChannelRendererSupport implements ChannelMessageRenderer {
 
+    private final KTalkProperties kTalkProperties;
+
+    public KTalkRenderer(KTalkProperties kTalkProperties) {
+        this.kTalkProperties = kTalkProperties;
+    }
+
     @Override
     public ChannelType channelType() {
         return ChannelType.KTALK;
@@ -18,7 +25,7 @@ public class KTalkRenderer extends AbstractChannelRendererSupport implements Cha
     @Override
     public String renderBody(TalkRequest request, ServiceData serviceData, MessageContent content) {
         ATalkBodySendData body = new ATalkBodySendData();
-        body.setSenderKey(param(request, "senderKey", "DEFAULT_KTALK_KEY"));
+        body.setSenderKey(defaultString(kTalkProperties.getSenderKey()));
         body.setRecipient(defaultString(request.getReceiverAddress()));
         body.setTemplateCode(content.getTemplateCode());
         String override = content.getExtras().get("templateCodeOverride");

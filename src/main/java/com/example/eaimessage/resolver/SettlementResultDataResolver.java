@@ -9,7 +9,7 @@ import java.util.Map;
 import org.springframework.stereotype.Component;
 
 @Component
-public class SettlementResultDataResolver extends AbstractResolverSupport implements MessageDataResolver {
+public class SettlementResultDataResolver implements MessageDataResolver {
 
     private final OrderInfoService orderInfoService;
 
@@ -24,7 +24,7 @@ public class SettlementResultDataResolver extends AbstractResolverSupport implem
 
     @Override
     public ServiceData resolve(TalkRequest request) {
-        String orderNo = param(request, "orderNo");
+        String orderNo = request.getContent() == null ? "" : request.getContent().trim();
         Map<String, Object> map = new HashMap<>();
         map.put("settlementStatus", orderInfoService.getSettlementResult(orderNo));
         map.put("orderNo", orderNo);

@@ -18,11 +18,11 @@ public class EmailRenderer extends AbstractChannelRendererSupport implements Cha
     @Override
     public String renderBody(TalkRequest request, ServiceData serviceData, MessageContent content) {
         EmailBodyPayload payload = new EmailBodyPayload(
-            firstNonBlank(content.getSubject(), request.getTitle(), serviceData.getString("title"), "[메일]"),
+            firstNonBlank(content.getSubject(), request.getTitle(), "[메일]"),
             firstNonBlank(request.getReceiverType(), "USER"),
-            firstNonBlank(request.getReceiverAddress(), serviceData.getString("receiverAddress"), ""),
-            firstNonBlank(request.getReceiverId(), serviceData.getString("receiverId"), ""),
-            firstNonBlank(content.getBodyText(), request.getContent(), serviceData.getString("content"), "")
+            defaultString(request.getReceiverAddress()),
+            defaultString(request.getReceiverId()),
+            firstNonBlank(content.getBodyText(), request.getContent(), "")
         );
         return payload.buildMessage();
     }

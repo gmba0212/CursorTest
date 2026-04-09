@@ -8,7 +8,7 @@ import java.util.Map;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ShortUrlDataResolver extends AbstractResolverSupport implements MessageDataResolver {
+public class ShortUrlDataResolver implements MessageDataResolver {
 
     private final ShortUrlService shortUrlService;
 
@@ -23,6 +23,7 @@ public class ShortUrlDataResolver extends AbstractResolverSupport implements Mes
 
     @Override
     public ServiceData resolve(TalkRequest request) {
-        return new ServiceData(Map.of("shortUrl", shortUrlService.createShortUrl(param(request, "url"))));
+        String longUrl = request.getContent();
+        return new ServiceData(Map.of("shortUrl", shortUrlService.createShortUrl(longUrl)));
     }
 }

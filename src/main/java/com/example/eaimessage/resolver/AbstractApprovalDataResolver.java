@@ -11,7 +11,7 @@ import java.util.Map;
 /**
  * 승인 요청/완료 타입이 동일한 외부 조회 로직을 공유한다.
  */
-abstract class AbstractApprovalDataResolver extends AbstractResolverSupport {
+abstract class AbstractApprovalDataResolver {
 
     private final OrderInfoService orderInfoService;
     private final UserInfoService userInfoService;
@@ -22,13 +22,13 @@ abstract class AbstractApprovalDataResolver extends AbstractResolverSupport {
     }
 
     protected ServiceData resolveApproval(TalkRequest request) {
-        String orderNo = param(request, "orderNo");
+        String orderNo = request.getContent() == null ? "" : request.getContent().trim();
         String userId = request.getReceiverId() == null ? "" : request.getReceiverId();
         Map<String, Object> map = new HashMap<>();
         map.put("orderInfo", orderInfoService.getOrderInfo(orderNo));
         map.put("userInfo", userInfoService.getUserInfo(userId));
         map.put("documentNo", orderNo.isBlank() ? "DOC-UNKNOWN" : orderNo);
-        map.put("approverName", request.getParams() == null ? "" : stringVal(request.getParams().get("approverName")));
+        map.put("approverName", userInfoService.getDisplayName(userId));
         map.put("approveDate", LocalDate.now().toString());
         return new ServiceData(map);
     }
