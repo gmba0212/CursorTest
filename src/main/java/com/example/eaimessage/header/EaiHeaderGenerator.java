@@ -15,9 +15,9 @@ public class EaiHeaderGenerator {
     private static final int MESSAGE_TYPE_LEN = 30;
     private static final int BODY_LENGTH_LEN = 8;
 
-    private static final String TEST_TP_DSCD = String.format("%-" + TEST_TP_DSCD_LEN + "s", "0");
-    private static final String SYS_CD = String.format("%-" + SYS_CD_LEN + "s", "SYSTEM");
-    private static final String IF_ID = String.format("%-" + IF_ID_LEN + "s", "IF0001");
+    private static final String TEST_TP_DSCD = FixedLengthFieldFormatter.rightPad("0", TEST_TP_DSCD_LEN);
+    private static final String SYS_CD = FixedLengthFieldFormatter.rightPad("SYSTEM", SYS_CD_LEN);
+    private static final String IF_ID = FixedLengthFieldFormatter.rightPad("IF0001", IF_ID_LEN);
 
     public String create(
         String transactionId,
@@ -25,10 +25,10 @@ public class EaiHeaderGenerator {
         String messageTypeCode,
         int bodyLength
     ) {
-        String txId = String.format("%-" + TX_ID_LEN + "s", safe(transactionId));
-        String channel = String.format("%-" + CHANNEL_LEN + "s", safe(channelCode));
-        String messageType = String.format("%-" + MESSAGE_TYPE_LEN + "s", safe(messageTypeCode));
-        String length = String.format("%0" + BODY_LENGTH_LEN + "d", Math.max(bodyLength, 0));
+        String txId = FixedLengthFieldFormatter.rightPad(transactionId, TX_ID_LEN);
+        String channel = FixedLengthFieldFormatter.rightPad(channelCode, CHANNEL_LEN);
+        String messageType = FixedLengthFieldFormatter.rightPad(messageTypeCode, MESSAGE_TYPE_LEN);
+        String length = FixedLengthFieldFormatter.zeroPadNumber(bodyLength, BODY_LENGTH_LEN);
 
         StringBuilder sb = new StringBuilder();
         sb.append(TEST_TP_DSCD);
@@ -39,9 +39,5 @@ public class EaiHeaderGenerator {
         sb.append(messageType);
         sb.append(length);
         return sb.toString();
-    }
-
-    private String safe(String value) {
-        return value == null ? "" : value;
     }
 }

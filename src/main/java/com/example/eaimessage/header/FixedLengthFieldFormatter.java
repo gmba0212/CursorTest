@@ -15,4 +15,13 @@ public final class FixedLengthFieldFormatter {
     public static String padRight(String value, int length) {
         return rightPad(value, length);
     }
+
+    public static String zeroPadNumber(int value, int length) {
+        int safe = Math.max(value, 0);
+        String formatted = String.format("%0" + length + "d", safe);
+        if (formatted.length() > length) {
+            return formatted.substring(formatted.length() - length);
+        }
+        return formatted;
+    }
 }
