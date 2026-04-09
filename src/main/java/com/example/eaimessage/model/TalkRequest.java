@@ -2,6 +2,13 @@ package com.example.eaimessage.model;
 
 import java.util.Map;
 
+/**
+ * UMS/발송 요청 공통 DTO.
+ * <p>
+ * {@link #channelType}·{@link #messageType}은 반드시 이 필드로만 지정한다.
+ * 모듈은 레지스트리 선택 시 {@code params}에서 채널/메시지 타입을 읽지 않는다.
+ * {@code params}는 주문번호·URL·승인자명 등 업무 확장 데이터만 둔다.
+ */
 public class TalkRequest {
     private ChannelType channelType;
     private MessageType messageType;
