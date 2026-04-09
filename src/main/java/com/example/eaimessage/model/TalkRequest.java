@@ -1,8 +1,14 @@
 package com.example.eaimessage.model;
 
-import java.util.Map;
-
+/**
+ * UMS/발송 요청 공통 DTO.
+ * <p>
+ * 채널·메시지 종류는 {@link #channelType}, {@link #messageType}만 사용한다.
+ * 업무 식별자·원문 URL 등은 {@link #content}, {@link #title} 등 명시 필드에 둔다.
+ * 범용 key-value 맵은 사용하지 않는다.
+ */
 public class TalkRequest {
+
     private ChannelType channelType;
     private MessageType messageType;
     private String title;
@@ -10,7 +16,6 @@ public class TalkRequest {
     private String receiverAddress;
     private String receiverId;
     private String content;
-    private Map<String, Object> params;
 
     public ChannelType getChannelType() {
         return channelType;
@@ -68,14 +73,6 @@ public class TalkRequest {
         this.content = content;
     }
 
-    public Map<String, Object> getParams() {
-        return params;
-    }
-
-    public void setParams(Map<String, Object> params) {
-        this.params = params;
-    }
-
     public static Builder builder() {
         return new Builder();
     }
@@ -115,11 +112,6 @@ public class TalkRequest {
 
         public Builder content(String content) {
             request.setContent(content);
-            return this;
-        }
-
-        public Builder params(Map<String, Object> params) {
-            request.setParams(params);
             return this;
         }
 

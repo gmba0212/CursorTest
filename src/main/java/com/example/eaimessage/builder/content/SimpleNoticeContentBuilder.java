@@ -9,6 +9,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class SimpleNoticeContentBuilder extends AbstractMessageContentSupport implements MessageContentBuilder {
 
+    private static final String DEFAULT_TEMPLATE_CODE = "KTALK_NOTICE";
+
     @Override
     public MessageType supportedType() {
         return MessageType.SIMPLE_NOTICE;
@@ -17,7 +19,7 @@ public class SimpleNoticeContentBuilder extends AbstractMessageContentSupport im
     @Override
     public MessageContent build(TalkRequest request, ServiceData serviceData) {
         return MessageContent.of(
-            param(request, "templateCode", "KTALK_NOTICE"),
+            DEFAULT_TEMPLATE_CODE,
             defaultString(request.getTitle()),
             defaultString(request.getContent())
         );
