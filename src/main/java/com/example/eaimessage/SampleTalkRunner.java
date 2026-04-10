@@ -23,11 +23,7 @@ public class SampleTalkRunner implements CommandLineRunner {
         TalkRequest request = TalkRequest.builder()
             .channelType(ChannelType.KTALK)
             .messageType(MessageType.SHORT_URL)
-            .title("[단축URL] 안내")
-            .receiverType("USER")
-            .receiverAddress("01012341234")
             .receiverId("user-1001")
-            .content("https://example.com/orders/ORD-20260406-1001")
             .build();
 
         talkService.send(request);

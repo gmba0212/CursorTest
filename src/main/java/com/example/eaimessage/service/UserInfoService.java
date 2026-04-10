@@ -18,4 +18,15 @@ public class UserInfoService {
     public String getDisplayName(String receiverId) {
         return getUserInfo(receiverId);
     }
+
+    public String getUserPhone(String receiverId) {
+        if (receiverId == null || receiverId.isBlank()) {
+            return "01000000000";
+        }
+        String normalized = receiverId.replaceAll("[^0-9]", "");
+        if (normalized.length() >= 11) {
+            return normalized.substring(0, 11);
+        }
+        return "010" + String.format("%08d", Math.abs(receiverId.hashCode()) % 100000000);
+    }
 }

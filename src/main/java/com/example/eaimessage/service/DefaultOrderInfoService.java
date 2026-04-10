@@ -5,9 +5,9 @@ import org.springframework.stereotype.Service;
 @Service
 public class DefaultOrderInfoService implements OrderInfoService {
     @Override
-    public String getOrderInfo(String orderNo) {
-        String safeOrderNo = orderNo == null || orderNo.isBlank() ? "ORD-UNKNOWN" : orderNo;
-        return "주문정보(" + safeOrderNo + ")";
+    public String findLatestOrderNoByUser(String userId) {
+        String safeUserId = userId == null || userId.isBlank() ? "UNKNOWN" : userId.trim();
+        return "ORD-" + safeUserId.toUpperCase();
     }
 
     @Override
