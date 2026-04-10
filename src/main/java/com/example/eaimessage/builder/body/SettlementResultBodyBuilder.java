@@ -25,9 +25,10 @@ public class SettlementResultBodyBuilder extends AbstractBodyBuilderSupport impl
         return buildByChannel(
             request,
             kTalkProperties,
-            "SETTLE_RES",
-            "[정산결과] " + valueOr(context, "orderNo", "N/A"),
-            "정산 결과: " + valueOr(context, "settlementStatus", "UNKNOWN")
+            context.getString("templateCode"),
+            context.getString("receiverType"),
+            context.getString("subject"),
+            context.getString("content")
         );
     }
 }

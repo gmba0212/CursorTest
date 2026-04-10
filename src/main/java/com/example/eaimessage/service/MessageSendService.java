@@ -22,6 +22,7 @@ public class MessageSendService {
 
     private final BodyBuilderFactory bodyBuilderFactory;
     private final HeaderBuilderFactory headerBuilderFactory;
+    private final MessageContentComposer messageContentComposer;
     private final EaiHttpClient eaiHttpClient;
     private final String eaiEndpoint;
     private final Map<MessageType, MessageDataClient> dataClients = new EnumMap<>(MessageType.class);
@@ -30,6 +31,7 @@ public class MessageSendService {
         List<MessageDataClient> clients,
         BodyBuilderFactory bodyBuilderFactory,
         HeaderBuilderFactory headerBuilderFactory,
+        MessageContentComposer messageContentComposer,
         EaiHttpClient eaiHttpClient,
         @Value("${eai.endpoint:http://localhost:8081/eai/send}") String eaiEndpoint
     ) {
@@ -41,6 +43,7 @@ public class MessageSendService {
         }
         this.bodyBuilderFactory = bodyBuilderFactory;
         this.headerBuilderFactory = headerBuilderFactory;
+        this.messageContentComposer = messageContentComposer;
         this.eaiHttpClient = eaiHttpClient;
         this.eaiEndpoint = eaiEndpoint;
     }
@@ -50,7 +53,7 @@ public class MessageSendService {
             throw new IllegalArgumentException("channelType/messageType must not be null");
         }
 
-        MessageContext context = resolveContext(request);
+        MessageContext context = messageContentComposer.compose(request, resolveContext(request));
         String body = bodyBuilderFactory.get(request.getMessageType()).build(request, context);
         String header = headerBuilderFactory.get().build(
             newTransactionId(),

@@ -9,8 +9,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class SimpleNoticeBodyBuilder extends AbstractBodyBuilderSupport implements BodyBuilder {
 
-    private static final String DEFAULT_TEMPLATE_CODE = "KTALK_NOTICE";
-
     private final KTalkProperties kTalkProperties;
 
     public SimpleNoticeBodyBuilder(KTalkProperties kTalkProperties) {
@@ -27,9 +25,10 @@ public class SimpleNoticeBodyBuilder extends AbstractBodyBuilderSupport implemen
         return buildByChannel(
             request,
             kTalkProperties,
-            DEFAULT_TEMPLATE_CODE,
-            defaultString(request.getTitle()),
-            defaultString(request.getContent())
+            context.getString("templateCode"),
+            context.getString("receiverType"),
+            context.getString("subject"),
+            context.getString("content")
         );
     }
 }

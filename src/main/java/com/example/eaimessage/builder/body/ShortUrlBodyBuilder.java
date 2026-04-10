@@ -25,9 +25,10 @@ public class ShortUrlBodyBuilder extends AbstractBodyBuilderSupport implements B
         return buildByChannel(
             request,
             kTalkProperties,
-            "SHORT_URL",
-            firstNonBlank(request.getTitle(), "[단축URL 안내]"),
-            "단축 URL: " + valueOr(context, "shortUrl", "N/A")
+            context.getString("templateCode"),
+            context.getString("receiverType"),
+            context.getString("subject"),
+            context.getString("content")
         );
     }
 }
