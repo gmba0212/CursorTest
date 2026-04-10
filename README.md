@@ -13,8 +13,8 @@ talkService.send(request);
 
 모듈이 담당하는 일:
 
-1. 전문 생성 (고정길이 문자열: Header + Body)  
-2. 중간 데이터 조회 (메시지 타입별 `MessageDataResolver`)  
+1. 전문 생성 (Header + Body 문자열)  
+2. 중간 데이터 조회 (메시지 타입별 `MessageDataClient`)  
 3. HTTP 전송 및 응답 코드 검증  
 
 ---
@@ -22,23 +22,29 @@ talkService.send(request);
 ## 핵심 구조
 
 - 진입: `TalkService` → `MessageSendService`로 위임  
-- 요청 DTO: `TalkRequest` — **명시 필드만** (`channelType`, `messageType`, `title`, 수신자 필드, `content`). **범용 `params` 맵 없음.**  
-- **데이터 조회 선택**: `MessageDataResolverRegistry` — `messageType` → `MessageDataResolver` → `ServiceData`  
-- **문구 생성 선택**: `MessageContentBuilderRegistry` — `messageType` → `MessageContentBuilder` → `MessageContent`  
-- **채널 포맷 선택**: `ChannelRendererRegistry` — `channelType` → `ChannelMessageRenderer` → Body 문자열  
-- 헤더: `EaiHeaderFactory`  
+- 요청 DTO: `TalkRequest` — `channelType`, `messageType`, `title`, 수신자 필드, `content` 등 **명시 필드만**  
+- **데이터 조회**: `MessageSendService`가 `List<MessageDataClient>`를 주입받아 `messageType`별 `EnumMap`으로 선택 → `fetch(request)` → `MessageContext`  
+- **문구·템플릿 스냅샷**: `MessageContentComposer`가 `MessageDataClient` 결과와 `TalkRequest`를 합쳐 `MessageContext`에 `templateCode`, `subject`, `content` 등을 채움 (채널별 기본값 보정 포함)  
+- **Body 조립**: `BodyBuilderFactory`가 `messageType`별 `BodyBuilder`를 선택 → Body 문자열  
+- **Header**: `HeaderBuilderFactory` → `HeaderBuilder` 구현체가 헤더 전문을 만든다 ([`DefaultHeaderBuilder`](https://github.com/gmba0212/CursorTest/blob/main/src/main/java/com/example/eaimessage/builder/header/DefaultHeaderBuilder.java))  
 - 전송: `EaiHttpClient`  
-- 알림톡 senderKey 등: `eaimessage.ktalk.*` 설정 (`KTalkProperties`)  
 
-타입별 데이터(resolver), 타입별 문구(content builder), 채널별 렌더러(renderer)는 `@Component`로 등록되고 **레지스트리가 `EnumMap`으로 구현만 고른다**. 중앙 서비스에 `switch (messageType)`으로 나열하지 않는다.
+타입별 데이터 클라이언트·Body 빌더는 `@Component`로 등록되고, **팩터리가 `EnumMap`으로 구현을 고른다**. `MessageSendService` 본문에는 `switch (messageType)`으로 분기하지 않는다.
 
-### `params`를 쓰지 않는 이유 (설계)
+### 전문 조립 (헤더·바디)
 
-- 임의 key-value는 **어떤 키가 유효한지 컴파일 타임에 알 수 없고**, 오타·누락이 런타임까지 숨는다.  
-- Resolver / Builder / Renderer가 **암묵적으로 같은 문자열 키**에 의존하게 된다.  
-- `channelType`·`messageType`으로 이미 라우팅되므로, 요청 본문은 **명시 필드 + Resolver가 채운 `ServiceData`** 로 단순화하는 편이 안전하다.  
+헤더는 [`DefaultHeaderBuilder`](https://github.com/gmba0212/CursorTest/blob/main/src/main/java/com/example/eaimessage/builder/header/DefaultHeaderBuilder.java) 한 클래스가 담당한다. 바디는 **메시지 타입(`MessageType`)마다 전용 클래스**가 있으며, 같은 맥락에서 “이 전문 종류의 바디를 만든다”는 점이 헤더 빌더와 대응된다.
 
-추가 업무 값이 필요하면 **외부 서비스 조회 결과(`ServiceData`)** 또는 **향후 `TalkRequest`에 필드 추가**로 확장한다 (맵으로 우회하지 않음).
+| MessageType | Body 작성 클래스 (`builder/body`) |
+|-------------|----------------------------------|
+| `APPROVAL_REQUEST` | `ApprovalRequestBodyBuilder` |
+| `APPROVAL_COMPLETE` | `ApprovalCompleteBodyBuilder` |
+| `SHORT_URL` | `ShortUrlBodyBuilder` |
+| `AUTH_CODE` | `AuthCodeBodyBuilder` |
+| `SIMPLE_NOTICE` | `SimpleNoticeBodyBuilder` |
+| `SETTLEMENT_RESULT` | `SettlementResultBodyBuilder` |
+
+공통 인터페이스는 `BodyBuilder`이고, `BodyBuilderFactory`가 `supportedType()`으로 구현을 고른다.
 
 ### `content` 필드 관례 (단순화)
 
@@ -49,9 +55,9 @@ talkService.send(request);
 | `SHORT_URL` | 단축할 **원본 URL** |
 | `APPROVAL_REQUEST`, `APPROVAL_COMPLETE` | **주문/문서 번호** (문서번호·조회 키) |
 | `SETTLEMENT_RESULT` | **주문 번호** (정산 조회 키) |
-| `SIMPLE_NOTICE`, `AUTH_CODE` | 안내 본문 / (인증은 Resolver가 코드 발급) |
+| `SIMPLE_NOTICE`, `AUTH_CODE` | 안내 본문 / (인증은 데이터 클라이언트가 코드 발급) |
 
-호출부는 위 관례에 맞게 `content`를 채우고, Resolver는 필요 시 `OrderInfoService` 등으로 보강한다.
+호출부는 위 관례에 맞게 `content`를 채우고, `MessageDataClient`는 필요 시 `OrderInfoService` 등으로 보강한다.
 
 ---
 
@@ -64,10 +70,10 @@ talkService.send(request);
 1. 호출부에서 `TalkRequest` 생성 (`channelType`, `messageType`, 수신자, `title`/`content` 등).  
 2. `TalkService.send(request)` → `MessageSendService.send(request)`.  
 3. `MessageSendService`에서 `channelType` / `messageType` null 검증.  
-4. `MessageDataResolverRegistry.require(messageType)` → `MessageDataResolver.resolve(request)` → **`ServiceData`**.  
-5. `MessageContentBuilderRegistry.require(messageType)` → `MessageContentBuilder.build(request, serviceData)` → **`MessageContent`**.  
-6. `ChannelRendererRegistry.require(channelType)` → `ChannelMessageRenderer.renderBody(...)` → **Body 문자열**.  
-7. `EaiHeaderFactory.createHeader(...)` (body UTF-8 길이 포함) → **Header 문자열**.  
+4. `MessageDataClient.fetch(request)` → **`MessageContext`** (타입별 조회 결과).  
+5. `MessageContentComposer.compose(request, rawContext)` → **`MessageContext`** (템플릿·제목·본문 등 반영).  
+6. `BodyBuilderFactory.get(messageType).build(request, context)` → **Body 문자열**.  
+7. `HeaderBuilderFactory.get().build(...)` (body UTF-8 길이 포함) → **Header 문자열**.  
 8. `payload = header + body`.  
 9. `EaiHttpClient.send(HttpSendRequest)` — `text/plain; charset=UTF-8` POST.  
 
@@ -79,37 +85,35 @@ talkService.send(request);
        -> MessageSendService.send(request)
             [1] request 검증 (channelType, messageType null 불가)
 
-            [2] 데이터 조회 — messageType 기준
-            -> MessageDataResolverRegistry.require(messageType)
-            -> MessageDataResolver.resolve(request) -> ServiceData
+            [2] 데이터 조회 — messageType 기준 (EnumMap)
+            -> MessageDataClient.fetch(request) -> MessageContext
 
-            [3] 문구 생성 — messageType 기준
-            -> MessageContentBuilderRegistry.require(messageType)
-            -> MessageContentBuilder.build(request, serviceData) -> MessageContent
+            [3] 문구·컨텍스트 보강
+            -> MessageContentComposer.compose(request, rawContext) -> MessageContext
 
-            [4] 채널 포맷 — channelType 기준
-            -> ChannelRendererRegistry.require(channelType)
-            -> ChannelMessageRenderer.renderBody(...) -> body
+            [4] Body 조립 — messageType 기준
+            -> BodyBuilderFactory.get(messageType)
+            -> BodyBuilder.build(request, context) -> body
 
             [5] 헤더 + 전송
-            -> EaiHeaderFactory.createHeader(...)
+            -> HeaderBuilderFactory.get().build(...)
             -> payload = header + body
             -> EaiHttpClient.send
 ```
 
-### 레지스트리 선택 표
+### 선택 표
 
-| 단계 | 역할 | 레지스트리 | 선택 키 | 구현 예 |
-|------|------|------------|---------|---------|
-| 데이터 | 외부 데이터 수집 | `MessageDataResolverRegistry` | `MessageType` | `ApprovalRequestDataResolver`, `ShortUrlDataResolver`, … |
-| 문구 | 제목·본문·템플릿 코드 | `MessageContentBuilderRegistry` | `MessageType` | `ApprovalRequestContentBuilder`, … |
-| 포맷 | 고정길이 Body 조립 | `ChannelRendererRegistry` | `ChannelType` | `KTalkRenderer`, `SmsRenderer`, `EmailRenderer` |
+| 단계 | 역할 | 선택 방식 | 선택 키 | 구현 예 |
+|------|------|-----------|---------|---------|
+| 데이터 | 외부 연동·조회 | `MessageSendService` 내 `EnumMap` | `MessageType` | `ApprovalRequestDataClient`, `ShortUrlDataClient`, … |
+| 문구 | 템플릿 코드·제목·본문 | `MessageContentComposer` | `MessageType` (내부 `switch`) | 타입별 분기 |
+| Body | 전문 Body 문자열 | `BodyBuilderFactory` | `MessageType` | `ApprovalRequestBodyBuilder`, … |
 
-### Registry 공통 패턴 (의사코드)
+### 팩터리 공통 패턴 (의사코드)
 
 ```java
 for (Each impl : injectedList) {
-    if (map.put(impl.key(), impl) != null) throw duplicate;
+    if (map.put(impl.supportedType(), impl) != null) throw duplicate;
 }
 ```
 
@@ -117,67 +121,60 @@ for (Each impl : injectedList) {
 
 ## 인터페이스 요약
 
-**MessageDataResolver**
+**MessageDataClient**
 
 ```java
 MessageType supportedType();
-ServiceData resolve(TalkRequest request);
+MessageContext fetch(TalkRequest request);
 ```
 
-**MessageContentBuilder**
+**MessageContentComposer**
+
+```java
+MessageContext compose(TalkRequest request, MessageContext rawContext);
+```
+
+**BodyBuilder**
 
 ```java
 MessageType supportedType();
-MessageContent build(TalkRequest request, ServiceData serviceData);
+String build(TalkRequest request, MessageContext context);
 ```
 
-**ChannelMessageRenderer**
+**HeaderBuilder**
 
 ```java
-ChannelType channelType();
-String renderBody(TalkRequest request, ServiceData serviceData, MessageContent content);
+String build(String transactionId, ChannelType channelType, MessageType messageType, int bodyLength);
 ```
 
-Renderer는 `MessageType`을 분기하지 않고 `MessageContent`와 수신자 정보만으로 Body를 만든다.
+Body 빌더는 `MessageContext`에 담긴 `templateCode`, `subject`, `content` 등과 `TalkRequest`의 채널·수신자 정보로 Body 문자열을 만든다.
 
 ---
 
-## DTO / Enum
+## DTO / 모델
 
 **TalkRequest**
 
 - `channelType`, `messageType`  
 - `title`, `receiverType`, `receiverAddress`, `receiverId`, `content`  
-- Resolver → `ServiceData` → ContentBuilder → `MessageContent`  
+
+**MessageContext**
+
+- 데이터 클라이언트 조회 결과와 컴포저가 채운 키-값 (`getString`, `data()`).  
 
 **Enum**
 
 - `ChannelType`: `KTALK`, `EMAIL`, `SMS`  
 - `MessageType`: `APPROVAL_REQUEST`, `APPROVAL_COMPLETE`, `SHORT_URL`, `AUTH_CODE`, `SIMPLE_NOTICE`, `SETTLEMENT_RESULT`  
 
-**MessageContent**  
-채널과 무관한 템플릿 코드·제목·본문 스냅샷.
-
----
-
-## 설정 (알림톡 등)
-
-`src/main/resources/application.properties`:
-
-```properties
-eaimessage.ktalk.sender-key=DEFAULT_KTALK_KEY
-```
-
-`KTalkRenderer`는 `KTalkProperties.getSenderKey()`만 사용한다 (요청 맵 없음).
-
 ---
 
 ## 외부 서비스 연동
 
-Resolver에서 도메인 서비스를 호출한다. 타입마다 Resolver 클래스로 **중앙 switch 없이** 확장.
+`client.data` 패키지의 `MessageDataClient` 구현에서 도메인 서비스를 호출한다.
 
 - `OrderInfoService`, `UserInfoService`, `AuthService`, `ShortUrlService` 등  
-- `APPROVAL_*`: `content`를 주문/문서 번호로 사용, `UserInfoService.getDisplayName(receiverId)`로 표시명  
+- `APPROVAL_*`: `content`를 주문/문서 번호로 사용, `UserInfoService` 등으로 표시명 보강  
 - `SHORT_URL`: `content`를 장 URL로 `ShortUrlService`에 전달  
 - `SETTLEMENT_RESULT`: `content`를 주문 번호로 정산 조회  
 
@@ -185,22 +182,23 @@ Resolver에서 도메인 서비스를 호출한다. 타입마다 Resolver 클래
 
 ## 전문 / 전송 원칙
 
-- 전문: `[EAI Header] + [채널별 Body]`  
+- 전문: `[EAI Header] + [Body]`  
 - JSON 전송 없음, `Content-Type: text/plain; charset=UTF-8`  
 
 ---
 
 ## HTTP 통신 분리
 
-`EaiHttpClient`만 실제 HTTP 호출. Resolver / ContentBuilder / Renderer는 HTTP 미사용.
+`EaiHttpClient`만 실제 HTTP 호출. 데이터 클라이언트·컴포저·Body 빌더는 HTTP를 사용하지 않는다.
 
 ---
 
 ## 예외 처리 기준
 
 - `TalkService` / `MessageSendService`: 필수값 null → `IllegalArgumentException`  
-- Registry `require(...)`: 미등록 타입/채널 → `IllegalArgumentException`  
-- Registry 생성자: 중복 키 → `IllegalStateException`  
+- `MessageSendService`: 해당 타입의 `MessageDataClient` 없음 → `IllegalArgumentException`  
+- `BodyBuilderFactory` / `MessageSendService` 생성자: 중복 키 → `IllegalStateException`  
+- `MessageContentComposer`: 미지원 `messageType` → `IllegalArgumentException`  
 - `EaiHttpClient`: HTTP 오류 / IO → `IllegalStateException`  
 
 ---
@@ -209,16 +207,50 @@ Resolver에서 도메인 서비스를 호출한다. 타입마다 Resolver 클래
 
 ```text
 com.example.eaimessage
-├─ config         (KTalkProperties 등)
+├─ EaiMessageModuleApplication.java
+├─ SampleTalkRunner.java
 ├─ model
-├─ header
-├─ builder
-│  └─ content
-├─ renderer
-├─ resolver
-├─ registry
+│  ├─ ChannelType.java
+│  ├─ MessageType.java
+│  ├─ TalkRequest.java
+│  ├─ MessageContext.java
+│  └─ HttpSendRequest.java
 ├─ service
-└─ client
+│  ├─ TalkService.java
+│  ├─ MessageSendService.java
+│  ├─ MessageContentComposer.java
+│  ├─ OrderInfoService.java / DefaultOrderInfoService.java
+│  ├─ UserInfoService.java
+│  ├─ AuthService.java
+│  ├─ ShortUrlService.java / DefaultShortUrlService.java
+│  └─ …
+├─ client
+│  ├─ EaiHttpClient.java
+│  └─ data
+│     ├─ MessageDataClient.java
+│     ├─ AbstractApprovalDataClient.java
+│     ├─ ApprovalRequestDataClient.java
+│     ├─ ApprovalCompleteDataClient.java
+│     ├─ ShortUrlDataClient.java
+│     ├─ AuthCodeDataClient.java
+│     ├─ SimpleNoticeDataClient.java
+│     └─ SettlementResultDataClient.java
+├─ builder
+│  ├─ factory
+│  │  ├─ BodyBuilderFactory.java
+│  │  └─ HeaderBuilderFactory.java
+│  ├─ header
+│  │  ├─ HeaderBuilder.java
+│  │  └─ DefaultHeaderBuilder.java
+│  └─ body
+│     ├─ BodyBuilder.java
+│     ├─ AbstractBodyBuilderSupport.java
+│     ├─ ApprovalRequestBodyBuilder.java
+│     ├─ ApprovalCompleteBodyBuilder.java
+│     ├─ ShortUrlBodyBuilder.java
+│     ├─ AuthCodeBodyBuilder.java
+│     ├─ SimpleNoticeBodyBuilder.java
+│     └─ SettlementResultBodyBuilder.java
 ```
 
 ---
@@ -226,22 +258,23 @@ com.example.eaimessage
 ## 구현 원칙 요약
 
 1. 문자열 전문(Header + Body), JSON 전송 금지  
-2. 헤더 생성 로직 재사용  
-3. 요청은 `TalkRequest` 명시 필드만, **params 맵 없음**  
-4. 데이터(Resolver) / 문구(ContentBuilder) / 포맷(Renderer) 삼분할 + Registry  
-5. 중앙 `switch (messageType)` 없이 확장  
-6. HTTP는 클라이언트 한곳  
+2. 헤더는 `HeaderBuilder` 구현(`DefaultHeaderBuilder`), 바디는 `MessageType`별 `BodyBuilder`로 나눈다  
+3. 요청은 `TalkRequest` 명시 필드만 사용  
+4. 데이터(`MessageDataClient`) / 문구 보강(`MessageContentComposer`) / Body(`BodyBuilder`) 역할 분리  
+5. 타입별 확장은 `@Component` + 팩터리·`EnumMap` 조합으로 중앙 분기 최소화  
+6. HTTP는 `EaiHttpClient` 한곳  
 
 ---
 
 ## 새 메시지 타입 추가 체크리스트
 
 1. `MessageType` enum 상수 추가  
-2. `MessageDataResolver` `@Component` 1개 (`TalkRequest` 필드 + 외부 서비스로 `ServiceData` 구성)  
-3. `MessageContentBuilder` `@Component` 1개  
-4. 타입별 `content`/수신자 필드 **관례를 README에 한 줄 추가** (필요 시)  
+2. `MessageDataClient` `@Component` 1개 (`fetch`로 `MessageContext` 구성)  
+3. `BodyBuilder` `@Component` 1개  
+4. `MessageContentComposer`에 해당 타입 분기 추가  
+5. 타입별 `content`/수신자 필드 **관례를 README에 한 줄 추가** (필요 시)  
 
-`MessageSendService`, 세 Registry 클래스, 기존 다른 타입 구현은 수정하지 않아도 된다.
+`MessageSendService`의 `EnumMap` 등록은 새 `MessageDataClient` 빈이 생기면 자동으로 포함된다. `BodyBuilderFactory`도 동일하다.
 
 ---
 
