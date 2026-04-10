@@ -1,6 +1,6 @@
 package com.example.eaimessage.service;
 
 public interface OrderInfoService {
-    String getOrderInfo(String orderNo);
+    String findLatestOrderNoByUser(String userId);
     String getSettlementResult(String orderNo);
 }

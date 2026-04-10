@@ -1,11 +1,11 @@
-package com.example.eaimessage.builder.header;
+package com.example.eaimessage.generator.header;
 
 import com.example.eaimessage.model.ChannelType;
 import com.example.eaimessage.model.MessageType;
 import org.springframework.stereotype.Component;
 
 @Component
-public class DefaultHeaderBuilder implements HeaderBuilder {
+public class DefaultMessageHeaderGenerator implements MessageHeaderGenerator {
 
     private static final int TEST_TP_DSCD_LEN = 1;
     private static final int SYS_CD_LEN = 10;
@@ -20,12 +20,11 @@ public class DefaultHeaderBuilder implements HeaderBuilder {
     private static final String IF_ID = String.format("%-" + IF_ID_LEN + "s", "IF0001");
 
     @Override
-    public String build(String transactionId, ChannelType channelType, MessageType messageType, int bodyLength) {
+    public String generate(String transactionId, ChannelType channelType, MessageType messageType, int bodyLength) {
         String txId = String.format("%-" + TX_ID_LEN + "s", safe(transactionId));
         String channel = String.format("%-" + CHANNEL_LEN + "s", channelType == null ? "" : channelType.name());
         String type = String.format("%-" + MESSAGE_TYPE_LEN + "s", messageType == null ? "" : messageType.name());
         String length = String.format("%0" + BODY_LENGTH_LEN + "d", Math.max(bodyLength, 0));
-
         return TEST_TP_DSCD + SYS_CD + IF_ID + txId + channel + type + length;
     }
 
