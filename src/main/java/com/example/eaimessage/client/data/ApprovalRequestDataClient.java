@@ -1,16 +1,16 @@
-package com.example.eaimessage.resolver;
+package com.example.eaimessage.client.data;
 
+import com.example.eaimessage.model.MessageContext;
 import com.example.eaimessage.model.MessageType;
-import com.example.eaimessage.model.ServiceData;
 import com.example.eaimessage.model.TalkRequest;
 import com.example.eaimessage.service.OrderInfoService;
 import com.example.eaimessage.service.UserInfoService;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ApprovalRequestDataResolver extends AbstractApprovalDataResolver implements MessageDataResolver {
+public class ApprovalRequestDataClient extends AbstractApprovalDataClient implements MessageDataClient {
 
-    public ApprovalRequestDataResolver(OrderInfoService orderInfoService, UserInfoService userInfoService) {
+    public ApprovalRequestDataClient(OrderInfoService orderInfoService, UserInfoService userInfoService) {
         super(orderInfoService, userInfoService);
     }
 
@@ -20,7 +20,7 @@ public class ApprovalRequestDataResolver extends AbstractApprovalDataResolver im
     }
 
     @Override
-    public ServiceData resolve(TalkRequest request) {
-        return resolveApproval(request);
+    public MessageContext fetch(TalkRequest request) {
+        return fetchApproval(request);
     }
 }

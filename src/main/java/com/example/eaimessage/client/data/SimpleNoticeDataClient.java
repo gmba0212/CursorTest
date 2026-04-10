@@ -1,13 +1,13 @@
-package com.example.eaimessage.resolver;
+package com.example.eaimessage.client.data;
 
+import com.example.eaimessage.model.MessageContext;
 import com.example.eaimessage.model.MessageType;
-import com.example.eaimessage.model.ServiceData;
 import com.example.eaimessage.model.TalkRequest;
 import java.util.Map;
 import org.springframework.stereotype.Component;
 
 @Component
-public class SimpleNoticeDataResolver implements MessageDataResolver {
+public class SimpleNoticeDataClient implements MessageDataClient {
 
     @Override
     public MessageType supportedType() {
@@ -15,7 +15,7 @@ public class SimpleNoticeDataResolver implements MessageDataResolver {
     }
 
     @Override
-    public ServiceData resolve(TalkRequest request) {
-        return new ServiceData(Map.of("notice", "simple"));
+    public MessageContext fetch(TalkRequest request) {
+        return MessageContext.of(Map.of("notice", "simple"));
     }
 }
