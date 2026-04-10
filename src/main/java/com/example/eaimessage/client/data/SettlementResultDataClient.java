@@ -1,7 +1,7 @@
-package com.example.eaimessage.resolver;
+package com.example.eaimessage.client.data;
 
+import com.example.eaimessage.model.MessageContext;
 import com.example.eaimessage.model.MessageType;
-import com.example.eaimessage.model.ServiceData;
 import com.example.eaimessage.model.TalkRequest;
 import com.example.eaimessage.service.OrderInfoService;
 import java.util.HashMap;
@@ -9,11 +9,11 @@ import java.util.Map;
 import org.springframework.stereotype.Component;
 
 @Component
-public class SettlementResultDataResolver implements MessageDataResolver {
+public class SettlementResultDataClient implements MessageDataClient {
 
     private final OrderInfoService orderInfoService;
 
-    public SettlementResultDataResolver(OrderInfoService orderInfoService) {
+    public SettlementResultDataClient(OrderInfoService orderInfoService) {
         this.orderInfoService = orderInfoService;
     }
 
@@ -23,11 +23,11 @@ public class SettlementResultDataResolver implements MessageDataResolver {
     }
 
     @Override
-    public ServiceData resolve(TalkRequest request) {
+    public MessageContext fetch(TalkRequest request) {
         String orderNo = request.getContent() == null ? "" : request.getContent().trim();
         Map<String, Object> map = new HashMap<>();
         map.put("settlementStatus", orderInfoService.getSettlementResult(orderNo));
         map.put("orderNo", orderNo);
-        return new ServiceData(map);
+        return MessageContext.of(map);
     }
 }

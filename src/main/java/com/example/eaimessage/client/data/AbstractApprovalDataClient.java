@@ -1,6 +1,6 @@
-package com.example.eaimessage.resolver;
+package com.example.eaimessage.client.data;
 
-import com.example.eaimessage.model.ServiceData;
+import com.example.eaimessage.model.MessageContext;
 import com.example.eaimessage.model.TalkRequest;
 import com.example.eaimessage.service.OrderInfoService;
 import com.example.eaimessage.service.UserInfoService;
@@ -8,20 +8,17 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * 승인 요청/완료 타입이 동일한 외부 조회 로직을 공유한다.
- */
-abstract class AbstractApprovalDataResolver {
+abstract class AbstractApprovalDataClient {
 
     private final OrderInfoService orderInfoService;
     private final UserInfoService userInfoService;
 
-    protected AbstractApprovalDataResolver(OrderInfoService orderInfoService, UserInfoService userInfoService) {
+    protected AbstractApprovalDataClient(OrderInfoService orderInfoService, UserInfoService userInfoService) {
         this.orderInfoService = orderInfoService;
         this.userInfoService = userInfoService;
     }
 
-    protected ServiceData resolveApproval(TalkRequest request) {
+    protected MessageContext fetchApproval(TalkRequest request) {
         String orderNo = request.getContent() == null ? "" : request.getContent().trim();
         String userId = request.getReceiverId() == null ? "" : request.getReceiverId();
         Map<String, Object> map = new HashMap<>();
@@ -30,6 +27,6 @@ abstract class AbstractApprovalDataResolver {
         map.put("documentNo", orderNo.isBlank() ? "DOC-UNKNOWN" : orderNo);
         map.put("approverName", userInfoService.getDisplayName(userId));
         map.put("approveDate", LocalDate.now().toString());
-        return new ServiceData(map);
+        return MessageContext.of(map);
     }
 }

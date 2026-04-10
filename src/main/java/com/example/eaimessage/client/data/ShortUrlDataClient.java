@@ -1,18 +1,18 @@
-package com.example.eaimessage.resolver;
+package com.example.eaimessage.client.data;
 
+import com.example.eaimessage.model.MessageContext;
 import com.example.eaimessage.model.MessageType;
-import com.example.eaimessage.model.ServiceData;
 import com.example.eaimessage.model.TalkRequest;
 import com.example.eaimessage.service.ShortUrlService;
 import java.util.Map;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ShortUrlDataResolver implements MessageDataResolver {
+public class ShortUrlDataClient implements MessageDataClient {
 
     private final ShortUrlService shortUrlService;
 
-    public ShortUrlDataResolver(ShortUrlService shortUrlService) {
+    public ShortUrlDataClient(ShortUrlService shortUrlService) {
         this.shortUrlService = shortUrlService;
     }
 
@@ -22,8 +22,7 @@ public class ShortUrlDataResolver implements MessageDataResolver {
     }
 
     @Override
-    public ServiceData resolve(TalkRequest request) {
-        String longUrl = request.getContent();
-        return new ServiceData(Map.of("shortUrl", shortUrlService.createShortUrl(longUrl)));
+    public MessageContext fetch(TalkRequest request) {
+        return MessageContext.of(Map.of("shortUrl", shortUrlService.createShortUrl(request.getContent())));
     }
 }
