@@ -25,9 +25,10 @@ public class ApprovalCompleteBodyBuilder extends AbstractBodyBuilderSupport impl
         return buildByChannel(
             request,
             kTalkProperties,
-            "APRV_DONE",
-            "[승인완료] " + valueOr(context, "approverName", "담당자"),
-            "결재 완료 (" + valueOr(context, "approveDate", "N/A") + ")"
+            context.getString("templateCode"),
+            context.getString("receiverType"),
+            context.getString("subject"),
+            context.getString("content")
         );
     }
 }

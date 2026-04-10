@@ -25,9 +25,10 @@ public class AuthCodeBodyBuilder extends AbstractBodyBuilderSupport implements B
         return buildByChannel(
             request,
             kTalkProperties,
-            "AUTH_CODE",
-            "[인증번호]",
-            "인증번호는 [" + valueOr(context, "authCode", "000000") + "] 입니다."
+            context.getString("templateCode"),
+            context.getString("receiverType"),
+            context.getString("subject"),
+            context.getString("content")
         );
     }
 }

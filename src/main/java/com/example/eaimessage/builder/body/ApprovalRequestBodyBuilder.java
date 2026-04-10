@@ -25,9 +25,10 @@ public class ApprovalRequestBodyBuilder extends AbstractBodyBuilderSupport imple
         return buildByChannel(
             request,
             kTalkProperties,
-            "APRV_REQ",
-            "[승인요청] " + valueOr(context, "approverName", "담당자"),
-            "결재 문서번호: " + valueOr(context, "documentNo", "N/A")
+            context.getString("templateCode"),
+            context.getString("receiverType"),
+            context.getString("subject"),
+            context.getString("content")
         );
     }
 }
