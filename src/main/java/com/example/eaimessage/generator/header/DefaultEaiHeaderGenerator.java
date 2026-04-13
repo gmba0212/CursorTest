@@ -22,7 +22,7 @@ public abstract class DefaultEaiHeaderGenerator implements EaiHeaderGenerator {
     @Override
     public String generate(TalkRequest request, String title, String content, int bodyLength) {
         String sysCd = String.format("%-" + SYS_CD_LEN + "s", safe(systemCode()));
-        String ifId = String.format("%-" + IF_ID_LEN + "s", safe(interfaceId()));
+        String ifId = String.format("%-" + IF_ID_LEN + "s", safe(request.getChannelType().getChannelInterfaceId()));
         String txId = String.format("%-" + TX_ID_LEN + "s", safe(transactionId(request)));
         String channelType = String.format("%-" + CHANNEL_TYPE_LEN + "s", request.getChannelType().name());
         String messageType = String.format("%-" + MESSAGE_TYPE_LEN + "s", request.getMessageType().name());
@@ -34,8 +34,6 @@ public abstract class DefaultEaiHeaderGenerator implements EaiHeaderGenerator {
     }
 
     protected abstract String systemCode();
-
-    protected abstract String interfaceId();
 
     protected abstract String transactionId(TalkRequest request);
 
