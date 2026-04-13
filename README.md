@@ -5,13 +5,14 @@
 ## 아키텍처
 
 - `TalkService` → `MessageSendService`
-- `MessageSendService` → `MessageGeneratorFactory.generate(request)`
-- `MessageGeneratorFactory`
-  1. `ChannelType` 기반 `EaiHeaderGenerator` 선택
-  2. `MessageType` 기반 `EaiBodyGenerator` 선택
-  3. `BodyGenerator`가 메시지 타입 전용 서비스 호출 + 공통 바디 포맷에 가변값 채움
-  4. Header 생성 후 `header + body` 반환
-- `EaiHttpClient` 전송
+- `MessageSendService`
+  1. `HeaderGeneratorFactory`에서 `ChannelType` 기반 `EaiHeaderGenerator` 선택
+  2. `BodyGeneratorFactory`에서 `MessageType` 기반 `EaiBodyGenerator` 선택
+  3. `BodyGenerator`가 메시지 타입별 서비스 호출 후 `BodyData` 생성
+  4. `DefaultBodyTemplate`이 고정 길이/패딩/기본값 규칙으로 body 문자열 조립
+  5. `HeaderGenerator`가 채널별 값으로 `HeaderData` 생성
+  6. `DefaultHeaderTemplate`이 공통 헤더 포맷으로 header 문자열 조립
+  7. `header + body` 결합 후 `EaiHttpClient` 전송
 
 ## 모델
 
@@ -30,27 +31,28 @@
 
 - `generator.header`
   - `EaiHeaderGenerator`
-  - `DefaultEaiHeaderGenerator` (공통 포맷 베이스)
   - `AtalkHeaderGenerator`
   - `EmailHeaderGenerator`
+  - `HeaderData`
+  - `DefaultHeaderTemplate`
 - `generator.body`
-  - `EaiBodyGenerator` (`supportMessageType`, `generate`)
-  - `DefaultEaiBodyGenerator` (공통 포맷 베이스)
+  - `EaiBodyGenerator`
   - `ADocumentBodyGenerator`
   - `BDocumentBodyGenerator`
-  - `BodyGenerationResult`
+  - `BodyData`
+  - `DefaultBodyTemplate`
 - `factory`
-  - `MessageGeneratorFactory`
+  - `HeaderGeneratorFactory`
+  - `BodyGeneratorFactory`
 
 ## 확장 방법
 
 새 메시지 타입 추가 시:
 1. `MessageType` enum에 타입 추가
-2. 새 `EaiBodyGenerator` 구현체 추가
-3. 필요 서비스 주입
-4. 스프링 컴포넌트 스캔으로 자동 매핑
+2. 새 `EaiBodyGenerator` 구현체 추가(내부에서 필요한 서비스 직접 호출)
+3. 스프링 컴포넌트 스캔으로 `BodyGeneratorFactory` 자동 매핑
 
-공통 전송 서비스(`MessageSendService`)와 팩토리 분기 로직 수정 없이 확장됩니다.
+공통 전송 서비스(`MessageSendService`) 수정 없이 확장됩니다.
 
 ## 샘플 요청
 

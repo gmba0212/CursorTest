@@ -7,5 +7,5 @@ public interface EaiBodyGenerator {
 
     MessageType supportMessageType();
 
-    BodyGenerationResult generate(TalkRequest request);
+    BodyData generate(TalkRequest request);
 }

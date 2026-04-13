@@ -1,7 +1,8 @@
 package com.example.eaimessage.generator.body;
 
-public record BodyGenerationResult(
-    String body,
+public record BodyData(
+    String messageType,
+    String receiverId,
     String title,
     String content
 ) {

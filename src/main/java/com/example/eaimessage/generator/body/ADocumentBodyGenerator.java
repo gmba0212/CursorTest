@@ -6,7 +6,7 @@ import com.example.eaimessage.service.AMessageContentService;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ADocumentBodyGenerator extends DefaultEaiBodyGenerator {
+public class ADocumentBodyGenerator implements EaiBodyGenerator {
 
     private final AMessageContentService messageContentService;
 
@@ -20,9 +20,14 @@ public class ADocumentBodyGenerator extends DefaultEaiBodyGenerator {
     }
 
     @Override
-    public BodyGenerationResult generate(TalkRequest request) {
+    public BodyData generate(TalkRequest request) {
         String title = messageContentService.getTitle(request.getReceiverId());
         String content = messageContentService.getContent(request.getReceiverId());
-        return generateWithDefaults(request, title, content);
+        return new BodyData(
+            request.getMessageType().name(),
+            request.getReceiverId(),
+            title,
+            content
+        );
     }
 }
