@@ -31,7 +31,10 @@ public class MessageSendService {
     }
 
     private static void validateRequest(TalkRequest request) {
-        if (request == null || request.getMessageType() == null) {
+        if (request == null || request.getChannelType() == null) {
+            throw new IllegalArgumentException("channelType must not be null");
+        }
+        if (request.getMessageType() == null) {
             throw new IllegalArgumentException("messageType must not be null");
         }
         if (request.getReceiverId() == null || request.getReceiverId().isBlank()) {
