@@ -2,22 +2,11 @@ package com.example.eaimessage.model;
 
 /**
  * 발송 요청 최소 입력 DTO.
- * <p>
- * 최초 요청은 channelType / messageType / receiverId만 받는다.
  */
 public class TalkRequest {
 
-    private ChannelType channelType;
     private MessageType messageType;
     private String receiverId;
-
-    public ChannelType getChannelType() {
-        return channelType;
-    }
-
-    public void setChannelType(ChannelType channelType) {
-        this.channelType = channelType;
-    }
 
     public MessageType getMessageType() {
         return messageType;
@@ -41,11 +30,6 @@ public class TalkRequest {
 
     public static class Builder {
         private final TalkRequest request = new TalkRequest();
-
-        public Builder channelType(ChannelType channelType) {
-            request.setChannelType(channelType);
-            return this;
-        }
 
         public Builder messageType(MessageType messageType) {
             request.setMessageType(messageType);
