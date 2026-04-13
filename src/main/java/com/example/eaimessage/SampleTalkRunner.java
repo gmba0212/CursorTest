@@ -22,7 +22,7 @@ public class SampleTalkRunner implements CommandLineRunner {
     public void run(String... args) {
         TalkRequest request = TalkRequest.builder()
             .channelType(ChannelType.A_TALK)
-            .messageType(MessageType.A_MESSAGE)
+            .messageType(MessageType.A_DOCUMENT)
             .receiverId("user-1001")
             .build();
 

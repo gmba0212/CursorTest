@@ -1,17 +1,16 @@
 package com.example.eaimessage.service;
 
-import com.example.eaimessage.model.TalkRequest;
 import org.springframework.stereotype.Service;
 
 @Service
 public class BMessageContentService {
 
-    public String getTitle(TalkRequest request) {
-        return "B_MESSAGE TITLE";
+    public String getTitle(String receiverId) {
+        return "B_DOCUMENT TITLE";
     }
 
-    public String getContent(TalkRequest request) {
-        return "B_MESSAGE CONTENT for receiver=" + safe(request.getReceiverId());
+    public String getContent(String receiverId) {
+        return "B_DOCUMENT CONTENT for receiver=" + safe(receiverId);
     }
 
     private static String safe(String receiverId) {
