@@ -22,11 +22,6 @@ public class EmailHeaderGenerator extends DefaultEaiHeaderGenerator {
     }
 
     @Override
-    protected String interfaceId() {
-        return "EML0001";
-    }
-
-    @Override
     protected String transactionId(TalkRequest request) {
         return LocalDateTime.now().format(TX_ID_FORMAT);
     }

@@ -17,8 +17,8 @@
 ## 모델
 
 - `ChannelType`
-  - `A_TALK`
-  - `EMAIL`
+  - `A_TALK` (`channelInterfaceId`: `ATK0001`)
+  - `EMAIL` (`channelInterfaceId`: `EML0001`)
 - `MessageType`
   - `A_MESSAGE`
   - `B_MESSAGE`
@@ -46,6 +46,12 @@
   - `MessageContentDto`
 - `factory`
   - `MessageGeneratorFactory`
+  - `DefaultEaiHeaderGenerator`
+    - Header의 IF_ID는 `ChannelType` enum의 `channelInterfaceId`를 사용
+    - 채널별 클래스는 시스템 코드/거래 ID 생성 책임만 유지
+  - `DefaultEaiBodyGenerator`
+    - Header와 동일한 고정 길이 상수/필드명 패턴 적용
+    - `MessageContentDto`의 `title`, `content`를 Body에 고정 길이로 적재
 
 ## 샘플 요청
 
