@@ -1,6 +1,5 @@
 package com.example.eaimessage;
 
-import com.example.eaimessage.model.ChannelType;
 import com.example.eaimessage.model.MessageType;
 import com.example.eaimessage.model.TalkRequest;
 import com.example.eaimessage.service.TalkService;
@@ -21,8 +20,7 @@ public class SampleTalkRunner implements CommandLineRunner {
     @Override
     public void run(String... args) {
         TalkRequest request = TalkRequest.builder()
-            .channelType(ChannelType.KTALK)
-            .messageType(MessageType.SHORT_URL)
+            .messageType(MessageType.A_MESSAGE)
             .receiverId("user-1001")
             .build();
 
