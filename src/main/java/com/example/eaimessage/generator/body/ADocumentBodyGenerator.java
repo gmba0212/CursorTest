@@ -3,6 +3,7 @@ package com.example.eaimessage.generator.body;
 import com.example.eaimessage.model.MessageType;
 import com.example.eaimessage.model.TalkRequest;
 import com.example.eaimessage.service.AMessageContentService;
+import com.example.eaimessage.model.ChannelType;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -12,6 +13,11 @@ public class ADocumentBodyGenerator implements EaiBodyGenerator {
 
     public ADocumentBodyGenerator(AMessageContentService messageContentService) {
         this.messageContentService = messageContentService;
+    }
+
+    @Override
+    public ChannelType supportChannelType() {
+        return ChannelType.A_TALK;
     }
 
     @Override

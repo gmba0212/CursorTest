@@ -7,9 +7,13 @@ import com.example.eaimessage.generator.body.BodyData;
 import com.example.eaimessage.generator.body.DefaultBodyTemplate;
 import com.example.eaimessage.generator.header.DefaultHeaderTemplate;
 import com.example.eaimessage.generator.header.HeaderData;
+import com.example.eaimessage.model.ChannelType;
 import com.example.eaimessage.model.HttpSendRequest;
 import com.example.eaimessage.model.TalkRequest;
 import java.nio.charset.StandardCharsets;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -19,7 +23,7 @@ public class MessageSendService {
     private final HeaderGeneratorFactory headerGeneratorFactory;
     private final BodyGeneratorFactory bodyGeneratorFactory;
     private final DefaultHeaderTemplate defaultHeaderTemplate;
-    private final DefaultBodyTemplate defaultBodyTemplate;
+    private final Map<ChannelType, DefaultBodyTemplate> defaultBodyTemplateMap = new EnumMap<>(ChannelType.class);
     private final EaiHttpClient eaiHttpClient;
     private final String eaiEndpoint;
 
@@ -27,14 +31,19 @@ public class MessageSendService {
         HeaderGeneratorFactory headerGeneratorFactory,
         BodyGeneratorFactory bodyGeneratorFactory,
         DefaultHeaderTemplate defaultHeaderTemplate,
-        DefaultBodyTemplate defaultBodyTemplate,
+        List<DefaultBodyTemplate> defaultBodyTemplates,
         EaiHttpClient eaiHttpClient,
         @Value("${eai.endpoint:http://localhost:8081/eai/send}") String eaiEndpoint
     ) {
         this.headerGeneratorFactory = headerGeneratorFactory;
         this.bodyGeneratorFactory = bodyGeneratorFactory;
         this.defaultHeaderTemplate = defaultHeaderTemplate;
-        this.defaultBodyTemplate = defaultBodyTemplate;
+        for (DefaultBodyTemplate defaultBodyTemplate : defaultBodyTemplates) {
+            ChannelType channelType = defaultBodyTemplate.supportChannelType();
+            if (defaultBodyTemplateMap.put(channelType, defaultBodyTemplate) != null) {
+                throw new IllegalStateException("Duplicate DefaultBodyTemplate for " + channelType);
+            }
+        }
         this.eaiHttpClient = eaiHttpClient;
         this.eaiEndpoint = eaiEndpoint;
     }
@@ -42,8 +51,8 @@ public class MessageSendService {
     public void send(TalkRequest request) {
         validateRequest(request);
 
-        BodyData bodyData = bodyGeneratorFactory.get(request.getMessageType()).generate(request);
-        String body = defaultBodyTemplate.generate(bodyData);
+        BodyData bodyData = bodyGeneratorFactory.get(request.getChannelType(), request.getMessageType()).generate(request);
+        String body = getDefaultBodyTemplate(request.getChannelType()).generate(bodyData);
 
         HeaderData headerData = headerGeneratorFactory
             .get(request.getChannelType())
@@ -68,5 +77,13 @@ public class MessageSendService {
         if (request.getReceiverId() == null || request.getReceiverId().isBlank()) {
             throw new IllegalArgumentException("receiverId must not be blank");
         }
+    }
+
+    private DefaultBodyTemplate getDefaultBodyTemplate(ChannelType channelType) {
+        DefaultBodyTemplate defaultBodyTemplate = defaultBodyTemplateMap.get(channelType);
+        if (defaultBodyTemplate == null) {
+            throw new IllegalArgumentException("No DefaultBodyTemplate for channel " + channelType);
+        }
+        return defaultBodyTemplate;
     }
 }
