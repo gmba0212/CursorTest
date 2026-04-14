@@ -3,26 +3,26 @@ package com.example.eaimessage.generator.body;
 import com.example.eaimessage.model.ChannelType;
 import com.example.eaimessage.model.MessageType;
 import com.example.eaimessage.model.TalkRequest;
-import com.example.eaimessage.service.BMessageContentService;
+import com.example.eaimessage.service.AMessageContentService;
 import org.springframework.stereotype.Component;
 
 @Component
-public class BDocumentBodyGenerator implements EaiBodyGenerator {
+public class EmailADocumentBodyGenerator implements EaiBodyGenerator {
 
-    private final BMessageContentService messageContentService;
+    private final AMessageContentService messageContentService;
 
-    public BDocumentBodyGenerator(BMessageContentService messageContentService) {
+    public EmailADocumentBodyGenerator(AMessageContentService messageContentService) {
         this.messageContentService = messageContentService;
     }
 
     @Override
     public ChannelType supportChannelType() {
-        return ChannelType.A_TALK;
+        return ChannelType.EMAIL;
     }
 
     @Override
     public MessageType supportMessageType() {
-        return MessageType.B_DOCUMENT;
+        return MessageType.A_DOCUMENT;
     }
 
     @Override

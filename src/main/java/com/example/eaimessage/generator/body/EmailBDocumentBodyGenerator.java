@@ -7,17 +7,17 @@ import com.example.eaimessage.service.BMessageContentService;
 import org.springframework.stereotype.Component;
 
 @Component
-public class BDocumentBodyGenerator implements EaiBodyGenerator {
+public class EmailBDocumentBodyGenerator implements EaiBodyGenerator {
 
     private final BMessageContentService messageContentService;
 
-    public BDocumentBodyGenerator(BMessageContentService messageContentService) {
+    public EmailBDocumentBodyGenerator(BMessageContentService messageContentService) {
         this.messageContentService = messageContentService;
     }
 
     @Override
     public ChannelType supportChannelType() {
-        return ChannelType.A_TALK;
+        return ChannelType.EMAIL;
     }
 
     @Override
