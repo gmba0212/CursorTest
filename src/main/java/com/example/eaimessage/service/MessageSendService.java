@@ -10,6 +10,7 @@ import com.example.eaimessage.generator.header.HeaderData;
 import com.example.eaimessage.model.ChannelType;
 import com.example.eaimessage.model.HttpSendRequest;
 import com.example.eaimessage.model.TalkRequest;
+import com.github.f4b6a3.tsid.TsidFactory;
 import java.nio.charset.StandardCharsets;
 import java.util.EnumMap;
 import java.util.List;
@@ -20,12 +21,16 @@ import org.springframework.stereotype.Service;
 @Service
 public class MessageSendService {
 
+    private static final int BODY_MESSAGE_ID_FIELD_LEN = 30;
+    private static final String BODY_MESSAGE_ID_PREFIX = "MSG";
+
     private final HeaderGeneratorFactory headerGeneratorFactory;
     private final BodyGeneratorFactory bodyGeneratorFactory;
     private final DefaultHeaderTemplate defaultHeaderTemplate;
     private final Map<ChannelType, DefaultBodyTemplate> defaultBodyTemplateMap = new EnumMap<>(ChannelType.class);
     private final EaiHttpClient eaiHttpClient;
     private final String eaiEndpoint;
+    private final TsidFactory tsidFactory;
 
     public MessageSendService(
         HeaderGeneratorFactory headerGeneratorFactory,
@@ -33,6 +38,7 @@ public class MessageSendService {
         DefaultHeaderTemplate defaultHeaderTemplate,
         List<DefaultBodyTemplate> defaultBodyTemplates,
         EaiHttpClient eaiHttpClient,
+        TsidFactory tsidFactory,
         @Value("${eai.endpoint:http://localhost:8081/eai/send}") String eaiEndpoint
     ) {
         this.headerGeneratorFactory = headerGeneratorFactory;
@@ -45,6 +51,7 @@ public class MessageSendService {
             }
         }
         this.eaiHttpClient = eaiHttpClient;
+        this.tsidFactory = tsidFactory;
         this.eaiEndpoint = eaiEndpoint;
     }
 
@@ -52,7 +59,12 @@ public class MessageSendService {
         validateRequest(request);
 
         BodyData bodyData = bodyGeneratorFactory.get(request.getChannelType(), request.getMessageType()).generate(request);
-        String body = getDefaultBodyTemplate(request.getChannelType()).generate(bodyData);
+        String bodyPayload = getDefaultBodyTemplate(request.getChannelType()).generate(bodyData);
+        String messageIdField = String.format(
+            "%-" + BODY_MESSAGE_ID_FIELD_LEN + "s",
+            BODY_MESSAGE_ID_PREFIX + tsidFactory.create().toString()
+        );
+        String body = messageIdField + bodyPayload;
 
         HeaderData headerData = headerGeneratorFactory
             .get(request.getChannelType())
