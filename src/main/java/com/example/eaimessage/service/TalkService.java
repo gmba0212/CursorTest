@@ -1,6 +1,8 @@
 package com.example.eaimessage.service;
 
 import com.example.eaimessage.model.TalkRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 /**
@@ -9,6 +11,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class TalkService {
 
+    private static final Logger log = LoggerFactory.getLogger(TalkService.class);
+
     private final MessageSendService messageSendService;
 
     public TalkService(MessageSendService messageSendService) {
@@ -16,6 +20,12 @@ public class TalkService {
     }
 
     public void send(TalkRequest request) {
+        log.debug(
+            "TalkService.send 위임 channel={}, messageType={}, receiverId={}",
+            request == null ? null : request.getChannelType(),
+            request == null ? null : request.getMessageType(),
+            request == null ? null : request.getReceiverId()
+        );
         messageSendService.send(request);
     }
 }
