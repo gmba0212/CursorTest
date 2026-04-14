@@ -1,5 +1,9 @@
 package com.example.eaimessage.model;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * 발송 요청 최소 입력 DTO.
  */
@@ -8,6 +12,7 @@ public class TalkRequest {
     private ChannelType channelType;
     private MessageType messageType;
     private String receiverId;
+    private Map<String, Object> data = new HashMap<>();
 
     public ChannelType getChannelType() {
         return channelType;
@@ -33,6 +38,23 @@ public class TalkRequest {
         this.receiverId = receiverId;
     }
 
+    public Map<String, Object> getData() {
+        return data == null ? Collections.emptyMap() : data;
+    }
+
+    public void setData(Map<String, Object> data) {
+        this.data = (data == null) ? new HashMap<>() : new HashMap<>(data);
+    }
+
+    public Object get(String key) {
+        return getData().get(key);
+    }
+
+    public String getString(String key) {
+        Object value = getData().get(key);
+        return value == null ? "" : String.valueOf(value);
+    }
+
     public static Builder builder() {
         return new Builder();
     }
@@ -52,6 +74,16 @@ public class TalkRequest {
 
         public Builder receiverId(String receiverId) {
             request.setReceiverId(receiverId);
+            return this;
+        }
+
+        public Builder data(Map<String, Object> data) {
+            request.setData(data);
+            return this;
+        }
+
+        public Builder data(String key, Object value) {
+            request.data.put(key, value);
             return this;
         }
 
