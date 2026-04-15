@@ -7,6 +7,7 @@ import com.example.eaimessage.generator.body.BodyData;
 import com.example.eaimessage.generator.body.DefaultBodyTemplate;
 import com.example.eaimessage.generator.header.DefaultHeaderTemplate;
 import com.example.eaimessage.generator.header.HeaderData;
+import com.example.eaimessage.config.EaiProperties;
 import com.example.eaimessage.model.ChannelType;
 import com.example.eaimessage.model.HttpSendRequest;
 import com.example.eaimessage.model.TalkRequest;
@@ -14,7 +15,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -25,7 +25,7 @@ public class MessageSendService {
     private final DefaultHeaderTemplate defaultHeaderTemplate;
     private final Map<ChannelType, DefaultBodyTemplate> defaultBodyTemplateMap = new EnumMap<>(ChannelType.class);
     private final EaiHttpClient eaiHttpClient;
-    private final String eaiEndpoint;
+    private final EaiProperties eaiProperties;
 
     public MessageSendService(
         HeaderGeneratorFactory headerGeneratorFactory,
@@ -33,7 +33,7 @@ public class MessageSendService {
         DefaultHeaderTemplate defaultHeaderTemplate,
         List<DefaultBodyTemplate> defaultBodyTemplates,
         EaiHttpClient eaiHttpClient,
-        @Value("${eai.endpoint:http://localhost:8081/eai/send}") String eaiEndpoint
+        EaiProperties eaiProperties
     ) {
         this.headerGeneratorFactory = headerGeneratorFactory;
         this.bodyGeneratorFactory = bodyGeneratorFactory;
@@ -45,7 +45,7 @@ public class MessageSendService {
             }
         }
         this.eaiHttpClient = eaiHttpClient;
-        this.eaiEndpoint = eaiEndpoint;
+        this.eaiProperties = eaiProperties;
     }
 
     public void send(TalkRequest request) {
@@ -60,7 +60,8 @@ public class MessageSendService {
         String header = defaultHeaderTemplate.generate(headerData);
 
         String finalMessage = header + body;
-        eaiHttpClient.send(new HttpSendRequest(eaiEndpoint, finalMessage));
+        String url = eaiProperties.resolveEndpoint(request.getChannelType());
+        eaiHttpClient.send(new HttpSendRequest(url, finalMessage));
     }
 
     private static int utf8Length(String body) {
