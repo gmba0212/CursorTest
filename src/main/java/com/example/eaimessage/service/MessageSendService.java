@@ -16,6 +16,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import org.springframework.stereotype.Service;
+import org.springframework.lang.Nullable;
 
 @Service
 public class MessageSendService {
@@ -33,7 +34,7 @@ public class MessageSendService {
         DefaultHeaderTemplate defaultHeaderTemplate,
         List<DefaultBodyTemplate> defaultBodyTemplates,
         EaiHttpClient eaiHttpClient,
-        EaiProperties eaiProperties
+        @Nullable EaiProperties eaiProperties
     ) {
         this.headerGeneratorFactory = headerGeneratorFactory;
         this.bodyGeneratorFactory = bodyGeneratorFactory;
@@ -45,7 +46,7 @@ public class MessageSendService {
             }
         }
         this.eaiHttpClient = eaiHttpClient;
-        this.eaiProperties = eaiProperties;
+        this.eaiProperties = eaiProperties != null ? eaiProperties : new EaiProperties();
     }
 
     public void send(TalkRequest request) {
