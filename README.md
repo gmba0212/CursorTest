@@ -35,6 +35,133 @@ Caller
      -> EaiHttpClient.send(HttpSendRequest)
 ```
 
+### 텍스트 아트 다이어그램
+
+```text
++-------------------+
+|      Caller       |
+| (Controller/Job)  |
++---------+---------+
+          |
+          v
++-------------------+
+|    TalkService    |
+| - facade entry    |
++---------+---------+
+          |
+          v
++---------------------------------------------------+
+|                 MessageSendService                |
+|---------------------------------------------------|
+| 1) validate request                               |
+| 2) select body generator                          |
+| 3) build BodyData                                 |
+| 4) render body                                    |
+| 5) select header generator                        |
+| 6) build HeaderData                               |
+| 7) render header                                  |
+| 8) send final message                             |
++----+----------------------+-------------------+---+
+     |                      |                   |
+     |                      |                   |
+     v                      v                   v
++-------------+     +---------------+   +---------------+
+| TalkRequest |     | EaiProperties |   | EaiHttpClient |
+|-------------|     |---------------|   |---------------|
+| channelType |     | endpoint map  |   | HTTP send     |
+| messageType |     | by channel    |   | final payload |
+| receiverId  |     +-------+-------+   +---------------+
+| data        |             ^
++------+------+             |
+       |                    |
+       |                    |
+       v                    |
++-------------------------+ |
+|   BodyGeneratorFactory  | |
+|-------------------------| |
+| key: Channel + Message  | |
++-----------+-------------+ |
+            |               |
+            v               |
+ +------------------------+ |
+ |    EaiBodyGenerator    | |
+ |------------------------| |
+ | ADocument...           | |
+ | BDocument...           | |
+ | EmailADocument...      | |
+ | EmailBDocument...      | |
+ +-----------+------------+ |
+             |              |
+             v              |
+ +------------------------+ |
+ |        BodyData        | |
+ |------------------------| |
+ | messageType            | |
+ | receiverId             | |
+ | title                  | |
+ | content                | |
+ +-----------+------------+ |
+             |              |
+             v              |
+ +------------------------+ |
+ |  DefaultBodyTemplate   | |
+ |------------------------| |
+ | ATalkDefault...        | |
+ | EmailDefault...        | |
+ +-----------+------------+ |
+             |              |
+             v              |
+       body string ---------+
+             |
+             v
++-------------------------+
+| HeaderGeneratorFactory  |
+|-------------------------|
+| key: ChannelType        |
++-----------+-------------+
+            |
+            v
++-------------------------+
+|   EaiHeaderGenerator    |
+|-------------------------|
+| AtalkHeaderGenerator    |
+| EmailHeaderGenerator    |
++-----------+-------------+
+            |
+            v
++-------------------------+
+|       HeaderData        |
+|-------------------------|
+| systemCode              |
+| interfaceId             |
+| transactionId           |
+| channelType             |
+| messageType             |
+| bodyLength              |
+| title / content         |
++-----------+-------------+
+            |
+            v
++-------------------------+
+|  DefaultHeaderTemplate  |
+|-------------------------|
+| fixed-length formatting |
++-----------+-------------+
+            |
+            v
+     header string + body string
+            |
+            v
++-------------------------------+
+|          finalMessage         |
++---------------+---------------+
+                |
+                v
++-------------------------------+
+| EaiHttpClient.send(request)   |
++-------------------------------+
+```
+
 ### 설계 포인트
 
 - `TalkService`는 기존 진입점 역할만 유지하고 실제 조립/전송은 `MessageSendService`에 위임합니다.
