@@ -3,16 +3,16 @@ package com.example.eaimessage.generator.body;
 import com.example.eaimessage.model.ChannelType;
 import com.example.eaimessage.model.MessageType;
 import com.example.eaimessage.model.TalkRequest;
-import com.example.eaimessage.service.MgCardUsageReportContentService;
+import com.example.eaimessage.service.CreateCardUsageReportService;
 import org.springframework.stereotype.Component;
 
 @Component
 public class EmailMgCardUsageReportBodyGenerator implements EaiBodyGenerator {
 
-    private final MgCardUsageReportContentService contentService;
+    private final CreateCardUsageReportService createCardUsageReportService;
 
-    public EmailMgCardUsageReportBodyGenerator(MgCardUsageReportContentService contentService) {
-        this.contentService = contentService;
+    public EmailMgCardUsageReportBodyGenerator(CreateCardUsageReportService createCardUsageReportService) {
+        this.createCardUsageReportService = createCardUsageReportService;
     }
 
     @Override
@@ -30,8 +30,8 @@ public class EmailMgCardUsageReportBodyGenerator implements EaiBodyGenerator {
         return new BodyData(
             request.getMessageType().name(),
             request.getReceiverId(),
-            contentService.getTitle(request.getReceiverId()),
-            contentService.getContent(request.getReceiverId())
+            createCardUsageReportService.createTitle(),
+            createCardUsageReportService.createContent(request)
         );
     }
 }
