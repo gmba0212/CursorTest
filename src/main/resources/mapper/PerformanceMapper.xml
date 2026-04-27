@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.eaimessage.mapper.PerformanceMapper">
+
+    <select id="selectCardEvtStatByUserId"
+            parameterType="string"
+            resultType="map">
+        WITH CARD_INFO AS (
+            SELECT a.card_id AS 카드ID
+                 , a.card_nm AS 카드명
+                 , a.rgst_user_id AS 등록자
+                 , (SELECT name
+                    FROM tpst.pcm_st_empy_info_n ia
+                    WHERE ia.code = a.rgst_user_id) AS 등록자명
+                 , DATE(a.rgst_dttm) AS 등록일자
+                 , a.inv_id AS 인벤토리ID
+                 , (SELECT CONCAT(ib.bsic_kor_nm, ' - ', ia.bsic_kor_nm)
+                    FROM tpst.pcm_st_bsic ia
+                       , tpst.pcm_st_bsic ib
+                    WHERE a.inv_id = ia.bsic_cd_id
+                      AND ia.up_bsic_cd_id = ib.bsic_cd_id) AS 인벤토리명
+                 , a.ptup_sts_cd AS 게시상태
+                 , (SELECT bsic_kor_nm
+                    FROM tpst.pcm_st_bsic ia
+                    WHERE ia.bsic_cd_id = a.ptup_sts_cd) AS 게시상태명
+                 , b.frpr_ptup_yn AS 최우선게시여부
+                 , b.tmr_setng_yn AS 게시기간설정여부
+                 , b.start_dt AS 게시시작일
+                 , b.end_dt AS 게시종료일
+                 , a.card_tp_cd AS 카드유형코드
+                 , (SELECT bsic_kor_nm
+                    FROM tpst.pcm_st_bsic ia
+                    WHERE ia.bsic_cd_id = a.card_tp_cd) AS 카드유형명
+                 , a.disp_way_cd AS 노출방식코드
+                 , (SELECT bsic_kor_nm
+                    FROM tpst.pcm_st_bsic ia
+                    WHERE ia.bsic_cd_id = a.disp_way_cd) AS 노출방식명
+                 , CASE
+                       WHEN a.disp_way_cd = 'SYS00000206' THEN a.cust_gun_setng_cd
+                       WHEN a.disp_way_cd = 'SYS00000207' THEN a.cust_gun_tp_cd
+                END AS 고객군유형코드
+                 , CASE
+                       WHEN a.disp_way_cd = 'SYS00000206' THEN (
+                           SELECT bsic_kor_nm
+                           FROM tpst.pcm_st_bsic ia
+                           WHERE ia.bsic_cd_id = a.cust_gun_setng_cd
+                           )
+                       WHEN a.disp_way_cd = 'SYS00000207' THEN (
+                           SELECT bsic_kor_nm
+                           FROM tpst.pcm_st_bsic ia
+                           WHERE ia.bsic_cd_id = a.cust_gun_tp_cd
+                           )
+                END AS 고객군유형명
+                 , CASE
+                       WHEN a.disp_way_cd = 'SYS00000206' THEN (
+                           CASE
+                               WHEN cust_gun_setng_cd = 'SYS00000192' THEN a.simp_setng_id
+                               WHEN cust_gun_setng_cd = 'SYS00000193' THEN a.user_sql_id
+                               WHEN cust_gun_setng_cd = 'SYS00000194' THEN a.file_upld_id
+                               WHEN cust_gun_setng_cd = 'SYS00000195' THEN a.frcs_mdl_id
+                               WHEN cust_gun_setng_cd = 'SYS00000196' THEN a.com_evt_id
+                               WHEN cust_gun_setng_cd = 'SYS00000197' THEN a.crm_link_id
+                               ELSE ''
+                               END
+                           )
+                END AS 고객군셋팅_코드
+                 , CASE
+                       WHEN a.disp_way_cd = 'SYS00000206' THEN (
+                           CASE
+                               WHEN cust_gun_setng_cd = 'SYS00000192' THEN (
+                                   SELECT simp_setng_nm
+                                   FROM tpst.pcm_st_simp_setng ia
+                                   WHERE a.simp_setng_id = ia.simp_setng_id
+                                   )
+                               WHEN cust_gun_setng_cd = 'SYS00000193' THEN (
+                                   SELECT user_sql_nm
+                                   FROM tpst.pcm_st_user_sql ia
+                                   WHERE a.user_sql_id = ia.user_sql_id
+                                   )
+                               WHEN cust_gun_setng_cd = 'SYS00000194' THEN (
+                                   SELECT file_upld_nm
+                                   FROM tpst.pcm_st_file_upld ia
+                                   WHERE a.file_upld_id = ia.file_upld_id
+                                   )
+                               WHEN cust_gun_setng_cd = 'SYS00000195' THEN (
+                                   SELECT frcs_mdl_nm
+                                   FROM tpst.pcm_st_frcs_mdl ia
+                                   WHERE a.frcs_mdl_id = ia.frcs_mdl_id
+                                   )
+                               WHEN cust_gun_setng_cd = 'SYS00000196' THEN (
+                                   SELECT com_evt_nm
+                                   FROM tpst.pcm_st_com_evt ia
+                                   WHERE a.com_evt_id = ia.com_evt_id
+                                   )
+                               WHEN cust_gun_setng_cd = 'SYS00000197' THEN (
+                                   SELECT camp_nm
+                                   FROM tpst.pcm_st_crm_camp_a ia
+                                   WHERE SUBSTR(a.crm_link_id, 1, 10) = ia.camp_id
+                                   )
+                               ELSE ''
+                               END
+                           )
+                END AS 고객군셋팅_명
+                 , a.*
+            FROM tpst.pcm_st_card a
+                     LEFT OUTER JOIN tpst.pcm_st_card_ptup b
+                                     ON a.card_id = b.card_id
+                                         AND b.del_yn = 'N'
+            WHERE 1 = 1
+              AND a.del_yn = 'N'
+        )
+        SELECT a.card_id AS 카드ID
+             , (SELECT card_nm
+                FROM tpst.pcm_st_card ia
+                WHERE a.card_id = ia.card_id) AS 카드명
+             , a.inv_id AS 인벤토리ID
+             , b.rgst_user_id AS 등록자아이디
+             , (SELECT CONCAT(ib.bsic_kor_nm, ' - ', ia.bsic_kor_nm)
+                FROM tpst.pcm_st_bsic ia
+                   , tpst.pcm_st_bsic ib
+                WHERE a.inv_id = ia.bsic_cd_id
+                  AND ia.up_bsic_cd_id = ib.bsic_cd_id) AS 인벤토리명
+             , b.카드유형명
+             , b.노출방식명
+             , b.고객군유형명
+             , a.prev_vw_cnt AS 노출건수
+             , a.prev_ck_cnt AS 클릭건수
+             , a.prev_cust_cnt AS 노출고객수
+             , a.prev_cust_clck_cnt AS 클릭고객수
+             , a.prev_ck_cnt / a.prev_vw_cnt * 100 AS 클릭율
+             , a.total_view_cnt AS 누적노출건수
+             , a.total_clck_cnt AS 누적클릭건수
+             , a.total_cust_cnt AS 누적노출고객수
+             , a.total_cust_clck_cnt AS 누적클릭고객수
+             , a.total_clck_cnt / a.total_view_cnt * 100 AS 누적클릭율
+             , DATE_FORMAT(b.등록일자, '%Y%m%d') AS 카드등록일자
+             , DATE_FORMAT(a.first_vw_date, '%Y%m%d') AS 최초노출일자
+             , DATE_FORMAT(a.last_vw_date, '%Y%m%d') AS 최종노출일자
+        FROM (
+                 SELECT card_id
+                      , inv_id
+                      , DATE_FORMAT(CURDATE(), '%Y%m%d') AS 기준일자
+                      , SUM(CASE
+                                WHEN base_dt = DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 1 DAY), '%Y%m%d')
+                                    THEN view_cnt
+                                ELSE 0 END) AS prev_vw_cnt
+                      , SUM(CASE
+                                WHEN base_dt = DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 1 DAY), '%Y%m%d')
+                                    THEN clck_cnt
+                                ELSE 0 END) AS prev_ck_cnt
+                      , SUM(CASE
+                                WHEN base_dt = DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 1 DAY), '%Y%m%d')
+                                    THEN cust_cnt
+                                ELSE 0 END) AS prev_cust_cnt
+                      , SUM(CASE
+                                WHEN base_dt = DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 1 DAY), '%Y%m%d')
+                                    THEN cust_clck_cnt
+                                ELSE 0 END) AS prev_cust_clck_cnt
+                      , SUM(view_cnt) AS total_view_cnt
+                      , SUM(clck_cnt) AS total_clck_cnt
+                      , SUM(cust_cnt) AS total_cust_cnt
+                      , SUM(cust_clck_cnt) AS total_cust_clck_cnt
+                      , MIN(rgst_dttm) AS first_vw_date
+                      , MAX(rgst_dttm) AS last_vw_date
+                 FROM pcm_st_card_evt_stat
+                 GROUP BY card_id
+             ) a
+                 LEFT OUTER JOIN CARD_INFO b
+                                 ON a.card_id = b.card_id
+        WHERE b.rgst_user_id = #{userId}
+        ORDER BY 9 DESC
+    </select>
+</mapper>
