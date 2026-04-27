@@ -5,23 +5,23 @@
 
 <mapper namespace="com.example.eaimessage.mapper.PerformanceMapper">
 
-    <select id="selectCardEvtStatByUserId"
+    <select id="selectCardUsageReportRows"
             parameterType="string"
-            resultType="map">
+            resultType="com.example.eaimessage.model.MgCardUsageReportRow">
         WITH CARD_INFO AS (
-            SELECT a.card_id AS 카드ID
-                 , a.card_nm AS 카드명
+            SELECT a.card_id AS cardId
+                 , a.card_nm AS cardName
                  , a.rgst_user_id AS 등록자
                  , (SELECT name
                     FROM tpst.pcm_st_empy_info_n ia
                     WHERE ia.code = a.rgst_user_id) AS 등록자명
-                 , DATE(a.rgst_dttm) AS 등록일자
-                 , a.inv_id AS 인벤토리ID
+                 , DATE(a.rgst_dttm) AS registerDate
+                 , a.inv_id AS inventoryId
                  , (SELECT CONCAT(ib.bsic_kor_nm, ' - ', ia.bsic_kor_nm)
                     FROM tpst.pcm_st_bsic ia
                        , tpst.pcm_st_bsic ib
                     WHERE a.inv_id = ia.bsic_cd_id
-                      AND ia.up_bsic_cd_id = ib.bsic_cd_id) AS 인벤토리명
+                      AND ia.up_bsic_cd_id = ib.bsic_cd_id) AS inventoryName
                  , a.ptup_sts_cd AS 게시상태
                  , (SELECT bsic_kor_nm
                     FROM tpst.pcm_st_bsic ia
@@ -33,11 +33,11 @@
                  , a.card_tp_cd AS 카드유형코드
                  , (SELECT bsic_kor_nm
                     FROM tpst.pcm_st_bsic ia
-                    WHERE ia.bsic_cd_id = a.card_tp_cd) AS 카드유형명
+                    WHERE ia.bsic_cd_id = a.card_tp_cd) AS cardTypeName
                  , a.disp_way_cd AS 노출방식코드
                  , (SELECT bsic_kor_nm
                     FROM tpst.pcm_st_bsic ia
-                    WHERE ia.bsic_cd_id = a.disp_way_cd) AS 노출방식명
+                    WHERE ia.bsic_cd_id = a.disp_way_cd) AS displayWayName
                  , CASE
                        WHEN a.disp_way_cd = 'SYS00000206' THEN a.cust_gun_setng_cd
                        WHEN a.disp_way_cd = 'SYS00000207' THEN a.cust_gun_tp_cd
@@ -53,7 +53,7 @@
                            FROM tpst.pcm_st_bsic ia
                            WHERE ia.bsic_cd_id = a.cust_gun_tp_cd
                            )
-                END AS 고객군유형명
+                END AS customerGroupTypeName
                  , CASE
                        WHEN a.disp_way_cd = 'SYS00000206' THEN (
                            CASE
@@ -112,33 +112,33 @@
             WHERE 1 = 1
               AND a.del_yn = 'N'
         )
-        SELECT a.card_id AS 카드ID
+        SELECT a.card_id AS cardId
              , (SELECT card_nm
                 FROM tpst.pcm_st_card ia
-                WHERE a.card_id = ia.card_id) AS 카드명
-             , a.inv_id AS 인벤토리ID
-             , b.rgst_user_id AS 등록자아이디
+                WHERE a.card_id = ia.card_id) AS cardName
+             , a.inv_id AS inventoryId
+             , b.rgst_user_id AS registerUserId
              , (SELECT CONCAT(ib.bsic_kor_nm, ' - ', ia.bsic_kor_nm)
                 FROM tpst.pcm_st_bsic ia
                    , tpst.pcm_st_bsic ib
                 WHERE a.inv_id = ia.bsic_cd_id
-                  AND ia.up_bsic_cd_id = ib.bsic_cd_id) AS 인벤토리명
-             , b.카드유형명
-             , b.노출방식명
-             , b.고객군유형명
-             , a.prev_vw_cnt AS 노출건수
-             , a.prev_ck_cnt AS 클릭건수
-             , a.prev_cust_cnt AS 노출고객수
-             , a.prev_cust_clck_cnt AS 클릭고객수
-             , a.prev_ck_cnt / a.prev_vw_cnt * 100 AS 클릭율
-             , a.total_view_cnt AS 누적노출건수
-             , a.total_clck_cnt AS 누적클릭건수
-             , a.total_cust_cnt AS 누적노출고객수
-             , a.total_cust_clck_cnt AS 누적클릭고객수
-             , a.total_clck_cnt / a.total_view_cnt * 100 AS 누적클릭율
-             , DATE_FORMAT(b.등록일자, '%Y%m%d') AS 카드등록일자
-             , DATE_FORMAT(a.first_vw_date, '%Y%m%d') AS 최초노출일자
-             , DATE_FORMAT(a.last_vw_date, '%Y%m%d') AS 최종노출일자
+                  AND ia.up_bsic_cd_id = ib.bsic_cd_id) AS inventoryName
+             , b.cardTypeName
+             , b.displayWayName
+             , b.customerGroupTypeName
+             , a.prev_vw_cnt AS prevViewCount
+             , a.prev_ck_cnt AS prevClickCount
+             , a.prev_cust_cnt AS prevCustomerCount
+             , a.prev_cust_clck_cnt AS prevClickCustomerCount
+             , a.prev_ck_cnt / a.prev_vw_cnt * 100 AS prevClickRate
+             , a.total_view_cnt AS totalViewCount
+             , a.total_clck_cnt AS totalClickCount
+             , a.total_cust_cnt AS totalCustomerCount
+             , a.total_cust_clck_cnt AS totalClickCustomerCount
+             , a.total_clck_cnt / a.total_view_cnt * 100 AS totalClickRate
+             , DATE_FORMAT(b.registerDate, '%Y%m%d') AS cardRegisterDate
+             , DATE_FORMAT(a.first_vw_date, '%Y%m%d') AS firstViewDate
+             , DATE_FORMAT(a.last_vw_date, '%Y%m%d') AS lastViewDate
         FROM (
                  SELECT card_id
                       , inv_id
@@ -171,6 +171,6 @@
                  LEFT OUTER JOIN CARD_INFO b
                                  ON a.card_id = b.card_id
         WHERE b.rgst_user_id = #{userId}
-        ORDER BY 9 DESC
+        ORDER BY prevViewCount DESC
     </select>
 </mapper>
